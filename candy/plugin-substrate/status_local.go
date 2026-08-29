@@ -34,6 +34,13 @@ func collectLocalStatus(_ context.Context, req spec.SubstrateStatusRequest) (spe
 	if err != nil {
 		return spec.SubstrateStatusReply{}, nil // a resolver error gates the substrate off, not errors the command
 	}
+	// Refresh the `system:` section of the per-host charly.yml — the host
+	// identity snapshot (hostname, distro, kernel, arch, GPU, virtualization,
+	// podman). `charly status` is the natural refresh point: it already reads the
+	// per-host config, and the snapshot answers "what is this host?" from the
+	// unified local config instead of re-probing on every invocation. Best-effort
+	// — a detection failure never fails the status command.
+	_ = kit.PopulateSystemInfo()
 	// The ledger is the `ledger:` section of the per-host charly.yml. Absence
 	// of the ledger (no local deploy has ever run on this host) yields zero
 	// rows — the graceful-degradation contract (no error, no rows).
