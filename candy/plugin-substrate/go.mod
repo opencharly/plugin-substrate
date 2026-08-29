@@ -4,7 +4,7 @@ go 1.26.4
 
 require (
 	github.com/alecthomas/kong v1.15.0
-	github.com/opencharly/sdk v0.2026241.1051
+	github.com/opencharly/sdk v0.2026241.1140
 )
 
 require (
