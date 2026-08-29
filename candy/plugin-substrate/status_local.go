@@ -37,8 +37,23 @@ func collectLocalStatus(_ context.Context, req spec.SubstrateStatusRequest) (spe
 	// The ledger is the `ledger:` section of the per-host charly.yml. Absence
 	// of the ledger (no local deploy has ever run on this host) yields zero
 	// rows — the graceful-degradation contract (no error, no rows).
-	deployIDs := kit.ListDeployIDs(paths)
-	candyNames := kit.ListCandyNames(paths)
+	//
+	// A MALFORMED ledger is a different thing and must not be reported as an empty
+	// one: printing "nothing deployed" for a charly.yml that could not be parsed is
+	// the silent-wrong-answer this collector already produced once, when the
+	// relocation left paths.Deploys == "" and the os.Stat guard read ENOENT as
+	// "absent". The strict listers draw that distinction -- absent is still nil,
+	// unparseable is an error naming the path -- and BOTH passes propagate it, where
+	// the pre-cutover code propagated on the candy path and swallowed on the deploy
+	// path for no stated reason.
+	deployIDs, err := kit.ListDeployIDsStrict(paths)
+	if err != nil {
+		return spec.SubstrateStatusReply{}, fmt.Errorf("local ledger deploys: %w", err)
+	}
+	candyNames, err := kit.ListCandyNamesStrict(paths)
+	if err != nil {
+		return spec.SubstrateStatusReply{}, fmt.Errorf("local ledger candies: %w", err)
+	}
 	if len(deployIDs) == 0 && len(candyNames) == 0 {
 		return spec.SubstrateStatusReply{}, nil
 	}
