@@ -29,14 +29,15 @@ import (
 // pointing at a fresh temp dir. Replicated here (R3 — the helper is test-only,
 // 4 lines, and lives in the charly module's test package the plugin cannot
 // import; the canonical construction is kit.LedgerPaths).
+//
+// The ledger is the `ledger:` section of a per-host charly.yml, so the fixture is a
+// FILE path, not the retired deploys/ + layers/ directory pair.
 func withTempLedger(t *testing.T) *kit.LedgerPaths {
 	t.Helper()
-	root := t.TempDir()
+	cfg := filepath.Join(t.TempDir(), "charly.yml")
 	return &kit.LedgerPaths{
-		Root:     root,
-		Deploys:  filepath.Join(root, "deploys"),
-		Candies:  filepath.Join(root, "layers"),
-		LockFile: filepath.Join(root, ".lock"),
+		ConfigFile: cfg,
+		LockFile:   cfg + ".lock",
 	}
 }
 
