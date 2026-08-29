@@ -12,7 +12,6 @@ package substratekind
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
 	"time"
 
@@ -53,16 +52,20 @@ func collectLocalStatus(_ context.Context, req spec.SubstrateStatusRequest) (spe
 	// unparseable is an error naming the path -- and BOTH passes propagate it, where
 	// the pre-cutover code propagated on the candy path and swallowed on the deploy
 	// path for no stated reason.
-	deployIDs, err := kit.ListDeployIDsStrict(paths)
+	// Read the FULL ledger maps in ONE read of the per-host charly.yml — the
+	// per-record ReadDeployRecord/ReadCandyRecord re-read the 310KB config once
+
+	// per record (measured: 186 reads per status run).
+
+	deploys, candies, err := kit.ReadLedger(paths)
 	if err != nil {
-		return spec.SubstrateStatusReply{}, fmt.Errorf("local ledger deploys: %w", err)
+		return spec.SubstrateStatusReply{}, fmt.Errorf("local ledger: %w", err)
 	}
-	candyNames, err := kit.ListCandyNamesStrict(paths)
-	if err != nil {
-		return spec.SubstrateStatusReply{}, fmt.Errorf("local ledger candies: %w", err)
-	}
-	if len(deployIDs) == 0 && len(candyNames) == 0 {
+
+	if len(deploys) == 0 && len(candies) == 0 {
+
 		return spec.SubstrateStatusReply{}, nil
+
 	}
 
 	// deployAgg accumulates per-deploy-id facts gathered across both ledger passes.
@@ -82,16 +85,8 @@ func collectLocalStatus(_ context.Context, req spec.SubstrateStatusRequest) (spe
 		return a
 	}
 
-	// Pass 1: explicit DeployRecords in ledger.deploys.
-	for _, id := range deployIDs {
-		rec, err := kit.ReadDeployRecord(paths, id)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: charly status: local collector: %v\n", err)
-			continue
-		}
-		if rec == nil {
-			continue
-		}
+	// Pass 1: explicit DeployRecords in ledger.deploys (in-memory — read once above).
+	for _, rec := range deploys {
 		a := get(rec.DeployID)
 		a.fromRecord = true
 		a.target = rec.Target
@@ -105,16 +100,8 @@ func collectLocalStatus(_ context.Context, req spec.SubstrateStatusRequest) (spe
 	}
 
 	// Pass 2: CandyRecords in ledger.candies — attribute each candy to every
-	// deploy-id in its deployed_by set.
-	for _, ln := range candyNames {
-		rec, err := kit.ReadCandyRecord(paths, ln)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: charly status: local collector: %v\n", err)
-			continue
-		}
-		if rec == nil {
-			continue
-		}
+	// deploy-id in its deployed_by set (in-memory — read once above).
+	for _, rec := range candies {
 		for _, id := range rec.DeployedBy {
 			a := get(id)
 			a.candySet[rec.Candy] = true

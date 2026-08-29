@@ -26,37 +26,37 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/opencharly/sdk"
 	"github.com/opencharly/sdk/deploykit"
 	"github.com/opencharly/sdk/kit"
-	"github.com/opencharly/sdk/loaderkit"
 	"github.com/opencharly/spec/spec"
+	"gopkg.in/yaml.v3"
 )
 
-// loadFleetConfig reads the per-host deploy overlay (~/.config/charly/charly.yml) via the
-// cycle-free plugin-side helper loaderkit.LoadHostFleetConfigViaExecutor (#55 coneC Unit C2 —
-// this retired the former deploykit.LoadFleetConfigViaSeam host-handler round-trip;
-// loaderkit already imports deploykit so the
-// helper lives there and a plugin calls it directly, placement-invariant — the bare
-// deploykit.LoadFleetConfig silently no-ops outside charly-core's own init() since
-// deploykit.DeployStateHost is only ever registered there; candy/plugin-substrate is compiled-in
-// TODAY, so the sibling `deploykit.LoadFleetConfig()` direct calls this replaces were CORRECT
-// only by that per-BUILD placement accident — dual-placement is a per-BUILD choice, never an
-// authoring guarantee). R3 hoist (charly#176 round 1): the former LoadFleetConfigViaSeam itself
-// hoisted four near-identical local copies (candy/plugin-status/nested_tree.go,
-// candy/plugin-fleet/ephemeral.go, candy/plugin-pod/remove_orchestration.go, this one); the C2
-// helper is now the ONE shared implementation all four call. This package still resolves its OWN
-// executor via ctx (sdk.ExecutorForInvoke) before delegating — the multi-call-per-process pattern
-// this VERB provider needs (unlike plugin-fleet's COMMAND-plugin package-var, which assumes
-// exactly one `charly fleet …` dispatch per process — unsafe to reuse here); HOW a caller
-// obtains its executor stays outside the shared helper's concern. Returns (nil, nil) on an
-// absent/empty overlay, matching deploykit.LoadFleetConfig's own contract.
+// loadFleetConfig reads the per-host deploy overlay (~/.config/charly/charly.yml) DIRECTLY — a
+// lightweight yaml.Unmarshal into the FleetConfig, NOT the full LoadUnified project walk. The
+// per-host config is a small file (deploy entries + cache + ledger + system) with no imports, so
+// the full loader is pure overhead: measured at ~197MB of allocation per load (the GC pressure
+// that dominated `charly status`). The direct read is placement-invariant — the file is on the
+// same host, readable by any process — and skips only the schema gate (the per-host config is
+// already at the HEAD schema). Returns (nil, nil) on an absent/empty overlay, matching
+// deploykit.LoadFleetConfig's own contract.
 func loadFleetConfig(ctx context.Context) (*deploykit.FleetConfig, error) {
-	ex, err := sdk.ExecutorForInvoke(ctx, 0)
+	path, err := spec.DefaultDeployConfigPath()
 	if err != nil {
-		return nil, fmt.Errorf("load fleet config: reach host reverse channel: %w", err)
+		return nil, nil
 	}
-	return loaderkit.LoadHostFleetConfigViaExecutor(ctx, ex)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var dc deploykit.FleetConfig
+	if err := yaml.Unmarshal(data, &dc); err != nil {
+		return nil, err
+	}
+	return &dc, nil
 }
 
 // runStatusFanout is the sdk.OpStatusCollectAll entry point (plugin.go): req.Single selects the
