@@ -62,13 +62,11 @@ func collectLocalStatus(_ context.Context, req spec.SubstrateStatusRequest) (spe
 		return spec.SubstrateStatusReply{}, fmt.Errorf("local ledger: %w", err)
 	}
 
-
 	if len(deploys) == 0 && len(candies) == 0 {
 
 		return spec.SubstrateStatusReply{}, nil
 
 	}
-
 
 	// deployAgg accumulates per-deploy-id facts gathered across both ledger passes.
 	type deployAgg struct {
