@@ -17,8 +17,11 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/opencharly/spec/cache"
 
 	"github.com/opencharly/sdk/enginekit"
 	"github.com/opencharly/spec/spec"
@@ -328,6 +331,11 @@ func runGuestProbes(ctx context.Context, e *enginekit.EngineClient, container st
 	if len(probes) == 0 {
 		return nil
 	}
+	// The probe script (the concatenated snippets) is the cache key — a change
+	// to any probe invalidates the cache. The results are the container's TOOL
+	// availability (metadata — the tools change only on an image rebuild), so
+	// they are cached with a short TTL; the LIVE up/down status (podman ps) is
+	// never cached.
 	var b strings.Builder
 	for _, p := range probes {
 		fmt.Fprintf(&b, "printf '\\n%s%s===\\n'\n( %s ) 2>/dev/null\nprintf '%s%s===\\n'\n",
@@ -336,13 +344,38 @@ func runGuestProbes(ctx context.Context, e *enginekit.EngineClient, container st
 			probeEndMarker, p.Name(),
 		)
 	}
+	key := container + "|" + b.String()
+	cachePath, _ := probeCachePath()
+	if cachePath != "" {
+		var cached []spec.ToolStatus
+		if cache.Read(cachePath, key, probeCacheTTL, &cached) {
+			return cached
+		}
+	}
 	out, _ := e.ExecBatched(ctx, container, b.String())
 	sections := splitProbeSections(out)
 	results := make([]spec.ToolStatus, len(probes))
 	for i, p := range probes {
 		results[i] = p.Parse(sections[p.Name()])
 	}
+	if cachePath != "" {
+		cache.Write(cachePath, key, results)
+	}
 	return results
+}
+
+// probeCacheTTL is how long a cached guest-probe result is trusted. The tools
+// in a container change only on an image rebuild, so a 30s TTL makes consecutive
+// status runs fast while still seeing a service crash within 30s.
+const probeCacheTTL = 30 * time.Second
+
+// probeCachePath returns the guest-probe cache file under the charly dir.
+func probeCachePath() (string, error) {
+	cfg, err := spec.DefaultDeployConfigPath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(cfg), "cache", "probes.json"), nil
 }
 
 // splitProbeSections returns a map[probeName]stdout for the markers emitted
