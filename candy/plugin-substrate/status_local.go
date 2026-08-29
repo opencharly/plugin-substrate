@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/opencharly/sdk/kit"
-	"gopkg.in/yaml.v3"
 	"github.com/opencharly/spec/spec"
 )
 
@@ -38,14 +37,8 @@ func collectLocalStatus(_ context.Context, req spec.SubstrateStatusRequest) (spe
 	// The ledger is the `ledger:` section of the per-host charly.yml. Absence
 	// of the ledger (no local deploy has ever run on this host) yields zero
 	// rows — the graceful-degradation contract (no error, no rows).
-	deployIDs, err := ledgerDeployIDs(paths)
-	if err != nil {
-		return spec.SubstrateStatusReply{}, nil
-	}
-	candyNames, err := ledgerCandyNames(paths)
-	if err != nil {
-		return spec.SubstrateStatusReply{}, fmt.Errorf("local ledger candies: %w", err)
-	}
+	deployIDs := kit.ListDeployIDs(paths)
+	candyNames := kit.ListCandyNames(paths)
 	if len(deployIDs) == 0 && len(candyNames) == 0 {
 		return spec.SubstrateStatusReply{}, nil
 	}
@@ -125,63 +118,6 @@ func collectLocalStatus(_ context.Context, req spec.SubstrateStatusRequest) (spe
 	// predictable.
 	sort.Slice(rows, func(i, j int) bool { return rows[i].Container < rows[j].Container })
 	return spec.SubstrateStatusReply{Rows: rows}, nil
-}
-
-// ledgerDeployIDs returns the deploy-ids in the ledger's deploys map. A missing
-// ledger is not an error — it yields an empty slice.
-func ledgerDeployIDs(paths *kit.LedgerPaths) ([]string, error) {
-	data, err := os.ReadFile(paths.ConfigFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	var doc struct {
-		Ledger *struct {
-			Deploys map[string]yaml.Node `yaml:"deploys"`
-		} `yaml:"ledger"`
-	}
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, err
-	}
-	if doc.Ledger == nil || doc.Ledger.Deploys == nil {
-		return nil, nil
-	}
-	ids := make([]string, 0, len(doc.Ledger.Deploys))
-	for id := range doc.Ledger.Deploys {
-		ids = append(ids, id)
-	}
-	sort.Strings(ids)
-	return ids, nil
-}
-
-// ledgerCandyNames returns the candy names in the ledger's candies map.
-func ledgerCandyNames(paths *kit.LedgerPaths) ([]string, error) {
-	data, err := os.ReadFile(paths.ConfigFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	var doc struct {
-		Ledger *struct {
-			Candies map[string]yaml.Node `yaml:"candies"`
-		} `yaml:"ledger"`
-	}
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, err
-	}
-	if doc.Ledger == nil || doc.Ledger.Candies == nil {
-		return nil, nil
-	}
-	names := make([]string, 0, len(doc.Ledger.Candies))
-	for n := range doc.Ledger.Candies {
-		names = append(names, n)
-	}
-	sort.Strings(names)
-	return names, nil
 }
 
 // localDeployLabel renders the IMAGE-cell text for a local deploy, which has no
