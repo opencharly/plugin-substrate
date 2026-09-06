@@ -46,9 +46,13 @@ func androidBedResolvedProject(t *testing.T) *spec.ResolvedProject {
 			androidBedResolvedProjectPodKey: {
 				Target: "pod",
 				Image:  "android-emulator",
-				Children: map[string]*spec.Deploy{
-					"device":     {Target: "android", From: "pixel9a-36"},
-					"device-net": {Target: "android", From: "pixel9a-endpoint"},
+				// Cutover C: the former nested-Children/Members dual maps are the position-derived
+				// member tree — entity keys inside the kind body are IN-SUBSTRATE
+				// members (dotted identity, deployed into the parent's venue);
+				// FleetWalkPreOrder walks them with the same dotted paths.
+				Member: []spec.Member{
+					{Name: "device", Position: spec.PositionInSubstrate, Node: &spec.Deploy{Target: "android", From: "pixel9a-36"}},
+					{Name: "device-net", Position: spec.PositionInSubstrate, Node: &spec.Deploy{Target: "android", From: "pixel9a-endpoint"}},
 				},
 			},
 			"some-pod": {Target: "pod", Image: "whatever"}, // must not contribute
