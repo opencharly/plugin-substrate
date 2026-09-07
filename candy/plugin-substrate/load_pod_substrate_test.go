@@ -10,7 +10,7 @@ package substratekind
 // (spec v0.2026241.1322 at tag v2026.242.0533), the pod body failed the substrate
 // load/validate chain — the iterate: block was misclassified as an in-substrate member
 // (kind-word key agent: inside its value mapping) and the imageless shape failed the
-// box-required validator — so the node VANISHED from the resolved fleet and every
+// box-required validator — so the node VANISHED from the resolved deploy and every
 // downstream consumer saw "no entity check-agent-live" (the charly-cli + distro-arch
 // check-agent-live repro). sdk #221/#225 fixed the parse (a declared #Deploy body field
 // is DATA — the member scan never looks inside its value) and spec #105/#107 removed
@@ -21,14 +21,14 @@ package substratekind
 // and plugin-build's TestBuildProjectEnvelope_ImagelessAgentProvisionedPodSurvives at the
 // SUBSTRATE-KIND level, over the SAME exported primitives the load chain runs (loaderkit
 // parse + CUE gates → spec.ValidateDeploymentTree → the StandaloneLoad env thread → the
-// provider's own Invoke/OpLoad echo the host folds into uf.Fleet):
+// provider's own Invoke/OpLoad echo the host folds into uf.Deploy):
 //
 //   1. the imageless agent_provisioned pod + iterate parses (CUE #NodeDoc + step gates),
-//     validates into the Fleet (the AgentProvisioned exemption), and the OpLoad echo
+//     validates into the Deploy (the AgentProvisioned exemption), and the OpLoad echo
 //     round-trips agent_provisioned + the iterate data byte-faithfully;
 //   2. the imageful pod still parses and echoes (the legacy spelling is unchanged);
 //   3. the discriminator: the same imageless node WITHOUT the flag is still rejected
-//     by the Fleet gate (the gate did not go away — the exemption is the only change);
+//     by the Deploy gate (the gate did not go away — the exemption is the only change);
 //   4. the template-shape echo stays byte-faithful for the same canonical body.
 
 import (
@@ -124,10 +124,10 @@ check-agent-live:
 // TestSubstrateOpLoad_ImagelessAgentProvisionedPodSurvives is the semantic repro: the NEW
 // canonical imageless agent_provisioned iterate-entity pod parses, passes BOTH CUE gates
 // the load chain runs (the per-entity #NodeDoc structural gate and the step-typing gate),
-// survives the Fleet gate (the ValidateDeployRequiresBox AgentProvisioned exemption), and
+// survives the Deploy gate (the ValidateDeployRequiresBox AgentProvisioned exemption), and
 // the substrate OpLoad echo hands the host back its agent_provisioned flag + iterate data
 // byte-faithfully. Under the pre-wave embedded contract this shape aborted the
-// load/validate chain, so the node never reached uf.Fleet and every downstream consumer
+// load/validate chain, so the node never reached uf.Deploy and every downstream consumer
 // saw "no entity check-agent-live".
 func TestSubstrateOpLoad_ImagelessAgentProvisionedPodSurvives(t *testing.T) {
 	if err := loaderkit.ValidateNodeDocCUE("repro-imageless", []byte(imagelessAgentProvisionedDoc)); err != nil {
@@ -158,9 +158,9 @@ func TestSubstrateOpLoad_ImagelessAgentProvisionedPodSurvives(t *testing.T) {
 	if err := json.Unmarshal(pn.Body, &dep); err != nil {
 		t.Fatalf("decode canonical body into spec.Deploy: %v", err)
 	}
-	fleet := map[string]spec.Deploy{"check-agent-live": dep}
-	if err := spec.ValidateDeploymentTree(fleet); err != nil {
-		t.Fatalf("ValidateDeploymentTree: the imageless agent_provisioned pod must stay in the Fleet: %v", err)
+	deploy := map[string]spec.Deploy{"check-agent-live": dep}
+	if err := spec.ValidateDeploymentTree(deploy); err != nil {
+		t.Fatalf("ValidateDeploymentTree: the imageless agent_provisioned pod must stay in the Deploy: %v", err)
 	}
 
 	echo := opLoadEcho(t, "pod", &spec.StructuralKindLoadEnv{
@@ -177,7 +177,7 @@ func TestSubstrateOpLoad_ImagelessAgentProvisionedPodSurvives(t *testing.T) {
 		t.Fatalf("echo.Iterate = %+v, want the iterate data intact", echoed.Iterate)
 	}
 	// iterate stayed DATA: the pod body carries NO members — the watcher deploy-level
-	// sibling is folded as its own fleet root (FleetWalkPreOrder: a deploy-level member
+	// sibling is folded as its own deploy root (DeployWalkPreOrder: a deploy-level member
 	// is a folded top-level entry walked as its own root, never inside its owner).
 	if echoed.HasMembers() {
 		t.Fatalf("echo member tree = %+v, want NO members (iterate is data; the watcher sibling folds as its own root)", echoed.Member)
@@ -253,14 +253,14 @@ check-agent-live:
 	}
 }
 
-// TestSubstrateOpLoad_PlainImagelessPodStillRejected is the discriminator: the Fleet gate
+// TestSubstrateOpLoad_PlainImagelessPodStillRejected is the discriminator: the Deploy gate
 // did NOT go away — a plain imageless pod without the AgentProvisioned flag is still
 // rejected with the box-required error; the exemption is the only change.
 func TestSubstrateOpLoad_PlainImagelessPodStillRejected(t *testing.T) {
-	fleet := map[string]spec.Deploy{
+	deploy := map[string]spec.Deploy{
 		"bare-pod": {Target: "pod"},
 	}
-	err := spec.ValidateDeploymentTree(fleet)
+	err := spec.ValidateDeploymentTree(deploy)
 	if err == nil {
 		t.Fatal("ValidateDeploymentTree: want the box-required rejection for a plain imageless pod")
 	}

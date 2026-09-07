@@ -8,7 +8,7 @@ package substratekind
 // + wire round-trip. Every other dependency was already sdk-portable, just not yet relocated:
 // kit.ExtractMetadata/kit.ResolveBoxName (sdk/kit/box_metadata.go + remote_ref.go, K4 #64),
 // deploykit.QuadletDir/QuadletExistsInstance/ServiceNameInstance/ResolveBoxEngineForDeploy
-// (sdk/deploykit, K4 #64), kit.ParsePortMapping (already sdk), deploykit.LoadFleetConfig
+// (sdk/deploykit, K4 #64), kit.ParsePortMapping (already sdk), deploykit.LoadDeployConfig
 // (already used elsewhere in this package). ListProvisionedSecretNames is a pure
 // exec.Command("podman","secret","ls",...) with zero host-private state — ported directly, no sdk
 // dependency needed.
@@ -32,15 +32,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// loadFleetConfig reads the per-host deploy overlay (~/.config/charly/charly.yml) DIRECTLY — a
-// lightweight yaml.Unmarshal into the FleetConfig, NOT the full LoadUnified project walk. The
+// loadDeployConfig reads the per-host deploy overlay (~/.config/charly/charly.yml) DIRECTLY — a
+// lightweight yaml.Unmarshal into the DeployConfig, NOT the full LoadUnified project walk. The
 // per-host config is a small file (deploy entries + cache + ledger + system) with no imports, so
 // the full loader is pure overhead: measured at ~197MB of allocation per load (the GC pressure
 // that dominated `charly status`). The direct read is placement-invariant — the file is on the
 // same host, readable by any process — and skips only the schema gate (the per-host config is
 // already at the HEAD schema). Returns (nil, nil) on an absent/empty overlay, matching
-// deploykit.LoadFleetConfig's own contract.
-func loadFleetConfig(ctx context.Context) (*deploykit.FleetConfig, error) {
+// deploykit.LoadDeployConfig's own contract.
+func loadDeployConfig(ctx context.Context) (*deploykit.DeployConfig, error) {
 	path, err := spec.DefaultDeployConfigPath()
 	if err != nil {
 		return nil, nil
@@ -52,7 +52,7 @@ func loadFleetConfig(ctx context.Context) (*deploykit.FleetConfig, error) {
 		}
 		return nil, err
 	}
-	var dc deploykit.FleetConfig
+	var dc deploykit.DeployConfig
 	if err := yaml.Unmarshal(data, &dc); err != nil {
 		return nil, err
 	}
@@ -94,15 +94,15 @@ func runStatusFanout(ctx context.Context, req spec.StatusSubstrateRequest) (spec
 type flatCollector struct {
 	rt      *kit.ResolvedRuntime
 	quadlet string
-	deploy  *deploykit.FleetConfig
+	deploy  *deploykit.DeployConfig
 }
 
 // flatCollectOpts is the read-only input one collection pass threads through: the deploy-cone
 // data enrichOne/enrichVmRow need, plus RunMode for the per-substrate collector requests.
 type flatCollectOpts struct {
-	IncludeAll bool                   // mirrors --all
-	Deploy     *deploykit.FleetConfig // ~/.config/charly/charly.yml (may be nil)
-	RunMode    string                 // c.rt.RunMode
+	IncludeAll bool                    // mirrors --all
+	Deploy     *deploykit.DeployConfig // ~/.config/charly/charly.yml (may be nil)
+	RunMode    string                  // c.rt.RunMode
 }
 
 // newFlatCollector wires up the runtime + cached deploy + quadlet dir. charly.yml validation
@@ -110,7 +110,7 @@ type flatCollectOpts struct {
 // NewCollector exactly (a missing/invalid charly.yml is normal on a fresh host).
 func newFlatCollector(ctx context.Context, rt *kit.ResolvedRuntime) *flatCollector {
 	c := &flatCollector{rt: rt}
-	if dc, err := loadFleetConfig(ctx); err == nil {
+	if dc, err := loadDeployConfig(ctx); err == nil {
 		c.deploy = dc
 	}
 	if qdir, err := deploykit.QuadletDir(); err == nil {
@@ -294,10 +294,10 @@ func (c *flatCollector) enrichOne(cs *spec.DeploymentStatus, bin string) {
 // enrichment (the same "absence is normal" contract this doc comment already
 // states); the row still shows with Source:libvirt, just unenriched.
 func (c *flatCollector) enrichVmRow(cs *spec.DeploymentStatus, opts flatCollectOpts) {
-	if opts.Deploy == nil || opts.Deploy.Fleet == nil {
+	if opts.Deploy == nil || opts.Deploy.Deploy == nil {
 		return
 	}
-	node, ok, err := deploykit.FindVmDeployNode(opts.Deploy.Fleet, cs.Image, cs.Image)
+	node, ok, err := deploykit.FindVmDeployNode(opts.Deploy.Deploy, cs.Image, cs.Image)
 	if !ok || err != nil {
 		return
 	}
@@ -324,23 +324,23 @@ func (c *flatCollector) enrichVmRow(cs *spec.DeploymentStatus, opts flatCollectO
 // deployKey() shape first, then the bed-rolled key shapes (joined container name minus the
 // charly- prefix). Those alternates are NOT a legacy charly format — a bed names its own
 // containers, so they are shapes charly must still match, not a superseded path to delete.
-func (c *flatCollector) lookupDeploy(box, instance, joinedContainerName string) (spec.FleetNode, bool) {
-	if c.deploy == nil || c.deploy.Fleet == nil {
-		return spec.FleetNode{}, false
+func (c *flatCollector) lookupDeploy(box, instance, joinedContainerName string) (spec.DeployNode, bool) {
+	if c.deploy == nil || c.deploy.Deploy == nil {
+		return spec.DeployNode{}, false
 	}
 	if box != "" {
-		if dn, ok := c.deploy.Fleet[spec.DeployKey(box, instance)]; ok {
+		if dn, ok := c.deploy.Deploy[spec.DeployKey(box, instance)]; ok {
 			return dn, true
 		}
-		if dn, ok := c.deploy.Fleet[box]; ok && instance == "" {
+		if dn, ok := c.deploy.Deploy[box]; ok && instance == "" {
 			return dn, true
 		}
 	}
 	stripped := strings.TrimPrefix(joinedContainerName, "charly-")
-	if dn, ok := c.deploy.Fleet[stripped]; ok {
+	if dn, ok := c.deploy.Deploy[stripped]; ok {
 		return dn, true
 	}
-	return spec.FleetNode{}, false
+	return spec.DeployNode{}, false
 }
 
 // resolveSystemdState consults systemctl + the quadlet dir to decide whether a non-podman-listed

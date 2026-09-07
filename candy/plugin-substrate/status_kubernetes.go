@@ -3,7 +3,7 @@ package substratekind
 // status_kubernetes.go — the Kubernetes substrate's OpStatus (K5: relocated verbatim from
 // charly core). A `target: kubernetes` deploy does not run a
 // container on this host — it emits a Kustomize manifest tree that
-// `charly fleet sync` / `kubectl apply -k` applies to a remote cluster, so
+// `charly deploy sync` / `kubectl apply -k` applies to a remote cluster, so
 // this collector reports GENERATION state (tree-present | not-generated) and
 // the referenced cluster/context, never live pod health (that is a `kube:`
 // check, candy/plugin-kube). Every input this needs (the folded project
