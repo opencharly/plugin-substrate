@@ -49,7 +49,7 @@ func androidBedResolvedProject(t *testing.T) *spec.ResolvedProject {
 				// Cutover C: the former nested-Children/Members dual maps are the position-derived
 				// member tree — entity keys inside the kind body are IN-SUBSTRATE
 				// members (dotted identity, deployed into the parent's venue);
-				// FleetWalkPreOrder walks them with the same dotted paths.
+				// DeployWalkPreOrder walks them with the same dotted paths.
 				Member: []spec.Member{
 					{Name: "device", Position: spec.PositionInSubstrate, Node: &spec.Deploy{Target: "android", From: "pixel9a-36"}},
 					{Name: "device-net", Position: spec.PositionInSubstrate, Node: &spec.Deploy{Target: "android", From: "pixel9a-endpoint"}},
@@ -122,7 +122,7 @@ func TestCollectAndroidDeployNodes_PerMachineWinsPerKey(t *testing.T) {
 		},
 	}
 	// Per-machine overlay flips "phone" to a pod target — the android node must disappear.
-	perMachine := &deploykit.FleetConfig{Fleet: map[string]deploykit.FleetNode{
+	perMachine := &deploykit.DeployConfig{Deploy: map[string]deploykit.DeployNode{
 		"phone": {Target: "pod", Image: "x"},
 	}}
 	nodes := collectAndroidDeployNodes(rp, perMachine)
