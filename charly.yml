@@ -8,7 +8,69 @@
 # Declaring discover: is the whole fix: the candy is scanned, the CUE schema gate
 # applies, and the STOCK `charly box validate` step starts working with no workflow
 # change. This file declares no entities of its own - it only tells charly where to look.
-version: 2026.232.0520
+version: 2026.249.2125
 discover:
     - path: candy
       recursive: true
+
+# eval-vm — the disposable Arch cloud-image VM the substrate bed nests inside.
+# A LOCAL copy: the bed's member needs a same-project template ref, and this repo
+# does not import main.
+eval-vm:
+    vm:
+        source:
+            kind: cloud_image
+            url: https://geo.mirror.pkgbuild.com/images/v20260701.551070/Arch-Linux-x86_64-cloudimg-20260701.551070.qcow2
+            checksum:
+                type: sha256
+                value: a99844dda491606f81f463ce96851ae03d90ca8fa727671cac2da86a07a7cd61
+            base_user: arch
+            distro: arch
+        backend: libvirt
+        disk_size: 20G
+        ram: 4G
+        cpu: 2
+        machine: q35
+        firmware: bios
+        ssh:
+            port_auto: true
+            key_source: generate
+        cloud_init:
+            timezone: UTC
+            package:
+                - sudo
+
+# check-substrate-app — the BARE local TEMPLATE the nested member deploys from.
+check-substrate-app:
+    local:
+        description: |-
+            Minimal kind:local TEMPLATE for the check-substrate member — a BARE `local:` node (no
+            from:/image:, no members) so it folds into uf.Local via plugin-substrate's TEMPLATE
+            fold arm (C2-substrate). Composes check-substrate-layer (drops
+            /etc/check-substrate-marker in the guest) so the member has a deterministic,
+            collision-free deploy effect.
+        candy:
+            - '@github.com/opencharly/layer-check-substrate-layer:v2026.240.0118'
+
+check-substrate:
+    vm:
+        from: eval-vm
+        disposable: true
+        lifecycle: dev
+        description: >-
+            Sole R10 witness of the externalized substrate structural kinds (candy/plugin-substrate, C2-substrate), run inside the disposable eval VM: a BARE `local:` TEMPLATE (check-substrate-app, template shape → uf.Local) plus a nested `local:` DEPLOY member (check-substrate-member, deploy shape → uf.Deploy), BOTH decoded out of core through the compiled-in plugin-substrate. runPluginKind → foldSubstrateKind pre-decodes each node via the core loader, validates its value against the KEPT #LocalValue def, threads the canonical result to plugin-substrate's OpLoad, and folds the ECHO into uf.Local / uf.Deploy. The nested member applies check-substrate-layer INSIDE the guest via kit.NestedExecutor, and the marker check asserts /etc/check-substrate-marker in the GUEST — proving both substrate shapes reconstruct + deploy end-to-end off the operator's workstation, byte-equivalent to the former in-proc standaloneKind.
+    check-substrate-member:
+        local:
+            from: check-substrate-app
+            # NESTED under the vm node (tree position) → deploys INSIDE the guest via
+            # kit.NestedExecutor. No `host:` field: the venue comes from the parent.
+            plan:
+                - check: command=test -f /etc/check-substrate-marker && echo SUBSTRATE-DEPLOY-OK
+                  id: substrate-marker-in-guest
+                  description: the nested substrate local DEPLOY (folded into uf.Deploy via plugin-substrate) applied its inherited template's marker layer INSIDE the eval VM guest
+                  stdout:
+                    - contains: SUBSTRATE-DEPLOY-OK
+                  context:
+                    - runtime
+                  command:
+                    command: "test -f /etc/check-substrate-marker && echo SUBSTRATE-DEPLOY-OK"
