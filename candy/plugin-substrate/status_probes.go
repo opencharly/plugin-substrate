@@ -17,7 +17,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -345,12 +344,10 @@ func runGuestProbes(ctx context.Context, e *enginekit.EngineClient, container st
 		)
 	}
 	key := container + "|" + b.String()
-	cachePath, _ := probeCachePath()
-	if cachePath != "" {
-		var cached []spec.ToolStatus
-		if cache.Read(cachePath, key, probeCacheTTL, &cached) {
-			return cached
-		}
+	store := probeCacheStore()
+	var cached []spec.ToolStatus
+	if store.ReadTTL(key, probeCacheTTL, &cached) {
+		return cached
 	}
 	out, _ := e.ExecBatched(ctx, container, b.String())
 	sections := splitProbeSections(out)
@@ -358,9 +355,7 @@ func runGuestProbes(ctx context.Context, e *enginekit.EngineClient, container st
 	for i, p := range probes {
 		results[i] = p.Parse(sections[p.Name()])
 	}
-	if cachePath != "" {
-		cache.Write(cachePath, key, results)
-	}
+	store.WriteValue(key, results)
 	return results
 }
 
@@ -369,13 +364,11 @@ func runGuestProbes(ctx context.Context, e *enginekit.EngineClient, container st
 // status runs fast while still seeing a service crash within 30s.
 const probeCacheTTL = 30 * time.Second
 
-// probeCachePath returns the guest-probe cache file under the charly dir.
-func probeCachePath() (string, error) {
-	cfg, err := spec.DefaultDeployConfigPath()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(filepath.Dir(cfg), "cache", "probes.json"), nil
+// probeCacheStore opens the guest-probe Store under the charly dir
+// (~/.config/charly/cache/probes/). An inert store (no config dir) makes every
+// lookup a miss without error.
+func probeCacheStore() *cache.Store {
+	return cache.OpenNamed("probes")
 }
 
 // splitProbeSections returns a map[probeName]stdout for the markers emitted
