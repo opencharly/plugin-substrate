@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opencharly/spec/cache"
 	"github.com/opencharly/spec/spec"
 )
 
@@ -54,5 +53,4 @@ func TestProbeCacheStoreTTLExpiry(t *testing.T) {
 	if store.ReadTTL("k", probeCacheTTL, &got) {
 		t.Fatal("an entry past the TTL must miss")
 	}
-	_ = cache.OpenNamed // keep the import explicit (the migrated idiom)
 }
