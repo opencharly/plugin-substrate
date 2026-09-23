@@ -355,7 +355,7 @@ func deployEngineForBox(ctx context.Context, boxName, globalEngine string) strin
 		return globalEngine
 	}
 	if entry, ok := dc.Lookup(boxName, ""); ok && entry.Engine != "" {
-		return entry.Engine
+		return string(entry.Engine)
 	}
 	return globalEngine
 }
