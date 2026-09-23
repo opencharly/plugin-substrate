@@ -345,9 +345,11 @@ func runGuestProbes(ctx context.Context, e *enginekit.EngineClient, container st
 	}
 	key := container + "|" + b.String()
 	store := probeCacheStore()
-	var cached []spec.ToolStatus
-	if store.ReadTTL(key, probeCacheTTL, &cached) {
-		return cached
+	if e, ok := store.Get(key); ok && e.FreshTTL(probeCacheTTL) {
+		var cached []spec.ToolStatus
+		if e.Decode(&cached) {
+			return cached
+		}
 	}
 	out, _ := e.ExecBatched(ctx, container, b.String())
 	sections := splitProbeSections(out)
@@ -355,7 +357,8 @@ func runGuestProbes(ctx context.Context, e *enginekit.EngineClient, container st
 	for i, p := range probes {
 		results[i] = p.Parse(sections[p.Name()])
 	}
-	store.WriteValue(key, results)
+	raw, _ := json.Marshal(results)
+	_ = store.Put(key, cache.Entry{Payload: raw})
 	return results
 }
 
@@ -367,8 +370,8 @@ const probeCacheTTL = 30 * time.Second
 // probeCacheStore opens the guest-probe Store under the charly dir
 // (~/.config/charly/cache/probes/). An inert store (no config dir) makes every
 // lookup a miss without error.
-func probeCacheStore() *cache.Store {
-	return cache.OpenNamed("probes")
+func probeCacheStore() *cache.Layout {
+	return cache.OpenNamedLayout("probes")
 }
 
 // splitProbeSections returns a map[probeName]stdout for the markers emitted
