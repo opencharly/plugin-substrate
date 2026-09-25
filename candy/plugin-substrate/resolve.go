@@ -51,6 +51,18 @@ func resolveSubstrateTemplate(in spec.SubstrateTemplateResolveRequest) ([]byte, 
 			Raw:               in.Kubernetes.Kubernetes,
 		}}
 		return json.Marshal(reply)
+	case in.KubeVirt != nil:
+		var kv spec.KubeVirt
+		if err := json.Unmarshal(in.KubeVirt.KubeVirt, &kv); err != nil {
+			return nil, fmt.Errorf("kubevirt resolve: decode: %w", err)
+		}
+		reply := spec.KubeVirtResolveReply{Resolved: &spec.ResolvedKubeVirt{
+			Cluster:     kv.Cluster,
+			KubeContext: kv.KubeContext,
+			Namespace:   kv.Namespace,
+			Raw:         in.KubeVirt.KubeVirt,
+		}}
+		return json.Marshal(reply)
 	case in.Android != nil:
 		var a spec.Android
 		if err := json.Unmarshal(in.Android.Android, &a); err != nil {
