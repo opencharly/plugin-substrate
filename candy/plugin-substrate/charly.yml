@@ -32,7 +32,7 @@ plugin-substrate:
                 - kind:android
                 - kind:kindcluster
         plan:
-            - check: the substrate structural kind plugin ships a buildable Go module the host compiles in (default) or serves out-of-process; its pod/vm/kubernetes/local/android/kindcluster structural decode (both the deploy fold to uf.Deploy and the standalone-template fold to uf.Pod/uf.VM/…) is exercised by every check bed / box composing a substrate node (check-substrate-* / check-kindcluster-* / box-fedora / box-cachyos / box-arch / box-debian). P14a's OpStatusCollect (pod live + local + kubernetes + kindcluster collectors + the probes) is exercised by the `charly status` parity beds (check-sidecar-pod status --json) + the relocated unit tests (collectPodLive golden, local ledger, probes, TestCollectKindclusterStatus).
+            - check: the substrate structural kind plugin ships a buildable Go module the host compiles in (default) or serves out-of-process; its pod/vm/kubernetes/local/android/kindcluster structural decode (both the deploy fold to uf.Deploy and the standalone-template fold to uf.Pod/uf.VM/…) is exercised by every check bed / box composing a substrate node (check-substrate-* / check-kindcluster-* / box-fedora / box-cachyos / box-arch / box-debian). P14a's OpStatusCollect (pod live + local + kubernetes + kindcluster collectors + the probes) is exercised by the `charly status` parity beds (check-sidecar-pod status --json) + the relocated unit tests (collectPodLive golden, local ledger, probes, TestKindclusterDeployEntries/TestKindclusterSpecFor_ResolvesContext/TestKindclusterClusterName_Sanitized).
               id: substrate-kind-module-present
               context:
                 - build
