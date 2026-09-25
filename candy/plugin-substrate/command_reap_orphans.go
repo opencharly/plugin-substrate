@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"fmt"
 	osexec "os/exec"
+	"strings"
 
 	"os"
 
@@ -141,6 +142,32 @@ func ephemeralUnderlyingResourceAlive(ctx context.Context, exec *sdk.Executor, n
 		check.Stderr = nil
 		check.Stdout = nil
 		return check.Run() == nil
+	case "kindcluster":
+		// A kindcluster's underlying resource is the kind cluster itself. kind get
+		// clusters is ENGINE-SCOPED, so set KIND_EXPERIMENTAL_PROVIDER to the
+		// engine the deploy was created with (the deploy's own `engine:`, else the
+		// default) — else a podman cluster reads as gone on a docker-default host
+		// and the ephemeral is reaped while still alive (a false positive).
+		provider := string(node.Engine)
+		if provider == "" {
+			provider = string(spec.DefaultContainerEngine)
+		}
+		check := osexec.Command("kind", "get", "clusters")
+		check.Env = append(os.Environ(), "KIND_EXPERIMENTAL_PROVIDER="+provider)
+		out, oerr := check.Output()
+		if oerr != nil {
+			return true // can't probe → conservative: assume alive
+		}
+		want := name
+		if node.VmState != nil && node.VmState.Ephemeral != nil && node.VmState.Ephemeral.InstanceName != "" {
+			want = node.VmState.Ephemeral.InstanceName
+		}
+		for _, line := range strings.Split(string(out), "\n") {
+			if strings.TrimSpace(line) == want {
+				return true
+			}
+		}
+		return false
 	case "kubevirt":
 		// A kind:kubevirt deploy's live identity is its VirtualMachine CR (namespace-
 		// scoped). Conservative by construction: if kubectl is absent there is no way to
