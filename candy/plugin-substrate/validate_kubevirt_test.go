@@ -2,6 +2,8 @@ package substratekind
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -88,5 +90,43 @@ func TestEphemeralUnderlyingResourceAlive_Kubevirt(t *testing.T) {
 	node := spec.Deploy{Target: "kubevirt", KubeVirtState: &spec.KubeVirtDeployState{VMName: "kv", Namespace: "vms"}}
 	if !ephemeralUnderlyingResourceAlive(t.Context(), nil, "kv", node) {
 		t.Fatal("kubevirt reap probe must be conservative (alive) when kubectl is absent")
+	}
+}
+
+// TestEphemeralUnderlyingResourceAlive_KubevirtPresent PROVES the present branch:
+// with a fake `kubectl` on PATH it runs `kubectl get vm <vm> -n <ns>` and returns
+// alive == (exit 0). This test FAILS if the `case "kubevirt":` arm is removed (the
+// fallthrough returns true regardless of the fake's exit), so it gates the change.
+func TestEphemeralUnderlyingResourceAlive_KubevirtPresent(t *testing.T) {
+	dir := t.TempDir()
+	// A fake kubectl that records its argv and exits with a scripted code.
+	logPath := filepath.Join(dir, "argv")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$*\" >> " + logPath + "\nexit ${FAKE_KUBECTL_EXIT:-0}\n"
+	if err := os.WriteFile(filepath.Join(dir, "kubectl"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+
+	node := spec.Deploy{Target: "kubevirt", KubeVirtState: &spec.KubeVirtDeployState{VMName: "kv", Namespace: "vms", KubeContext: "ctx"}}
+
+	// exit 0 → the VM exists → ALIVE.
+	t.Setenv("FAKE_KUBECTL_EXIT", "0")
+	if !ephemeralUnderlyingResourceAlive(t.Context(), nil, "kv", node) {
+		t.Fatal("kubectl present + exit 0 must report alive")
+	}
+	// exit 1 → the VM is gone → NOT alive (reapable).
+	t.Setenv("FAKE_KUBECTL_EXIT", "1")
+	if ephemeralUnderlyingResourceAlive(t.Context(), nil, "kv", node) {
+		t.Fatal("kubectl present + non-zero exit must report not-alive")
+	}
+
+	// The probe invoked kubectl with the persisted namespace + context.
+	argv, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("fake kubectl was never invoked: %v", err)
+	}
+	got := string(argv)
+	if !strings.Contains(got, "get vm kv -n vms --no-headers --context ctx") {
+		t.Fatalf("kubectl argv = %q, want it to carry vm/namespace/context", got)
 	}
 }

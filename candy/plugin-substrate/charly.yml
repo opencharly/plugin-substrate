@@ -17,7 +17,7 @@ plugin-substrate:
             to the former in-proc standaloneKind decode. COMPILED-IN (in the embedded compiled_plugins:),
             like the tier-1 kinds and group, because these are core deploy primitives every box/submodule
             must always resolve; also serves out-of-process via cmd/serve. P14a added the COLLECTOR
-            OpStatusCollect on the same kind-provider Invoke (dispatched by word pod/vm/kubernetes/local/android/kindcluster/kubevirt):
+            OpStatusCollect on the same kind-provider Invoke (dispatched by word pod/vm/kubernetes/local/android/kubevirt):
             the cleanly-movable status collectors — pod live (snapshot + live mounts + tool probes) + local
             (install-ledger) + the probes — relocated here from charly core, reached by the host's
             `charly status` fan-out; the deploy-cone-coupled enrichment + the vm/kubernetes/kubevirt/android collectors
@@ -33,7 +33,7 @@ plugin-substrate:
                 - kind:android
                 - kind:kubevirt
         plan:
-            - check: the substrate structural kind plugin ships a buildable Go module the host compiles in (default) or serves out-of-process; its pod/vm/kubernetes/local/android/kindcluster/kubevirt structural decode (both the deploy fold to uf.Deploy and the standalone-template fold to uf.Pod/uf.VM/…) is exercised by every check bed / box composing a substrate node (check-substrate-* / box-fedora / box-cachyos / box-arch / box-debian). P14a's OpStatusCollect (pod live + local collectors + the probes) is exercised by the `charly status` parity beds (check-sidecar-pod status --json) + the relocated unit tests (collectPodLive golden, local ledger, probes).
+            - check: the substrate structural kind plugin ships a buildable Go module the host compiles in (default) or serves out-of-process; its pod/vm/kubernetes/local/android/kubevirt structural decode (both the deploy fold to uf.Deploy and the standalone-template fold to uf.Pod/uf.VM/…) is exercised by every check bed / box composing a substrate node (check-substrate-* / box-fedora / box-cachyos / box-arch / box-debian). P14a's OpStatusCollect (pod live + local collectors + the probes) is exercised by the `charly status` parity beds (check-sidecar-pod status --json) + the relocated unit tests (collectPodLive golden, local ledger, probes).
               id: substrate-kind-module-present
               context:
                 - build
