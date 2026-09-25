@@ -65,3 +65,30 @@ func TestResolveKindcluster_FieldCopy(t *testing.T) {
 		t.Errorf("Raw not preserved through resolve")
 	}
 }
+
+// TestResolveKubeVirt_FieldCopy covers the kubevirt substrate-value de-type: OpResolve
+// projects spec.KubeVirt → ResolvedKubeVirt (cluster/context/namespace + Raw). Without
+// this arm the kind:kubevirt template cannot be de-typed for the deploy consumer.
+func TestResolveKubeVirt_FieldCopy(t *testing.T) {
+	body, err := json.Marshal(spec.KubeVirt{Cluster: "prod", KubeContext: "ctx", Namespace: "vms"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := resolveSubstrateTemplate(spec.SubstrateTemplateResolveRequest{
+		KubeVirt: &spec.KubeVirtResolveInput{KubeVirt: body},
+	})
+	if err != nil {
+		t.Fatalf("resolveSubstrateTemplate(kubevirt): %v", err)
+	}
+	var reply spec.KubeVirtResolveReply
+	if err := json.Unmarshal(out, &reply); err != nil {
+		t.Fatal(err)
+	}
+	r := reply.Resolved
+	if r == nil || r.Cluster != "prod" || r.KubeContext != "ctx" || r.Namespace != "vms" {
+		t.Fatalf("kubevirt field copy failed: %+v", r)
+	}
+	if string(r.Raw) != string(body) {
+		t.Errorf("Raw not preserved through resolve")
+	}
+}

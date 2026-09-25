@@ -59,6 +59,12 @@ func statusCollect(ctx context.Context, word string, reqJSON []byte) (*statusRes
 			return nil, fmt.Errorf("substrate status-collect kindcluster: %w", err)
 		}
 		return marshalStatusReply(reply)
+	case "kubevirt":
+		reply, err := collectKubevirtStatus(ctx, in)
+		if err != nil {
+			return nil, fmt.Errorf("substrate status-collect kubevirt: %w", err)
+		}
+		return marshalStatusReply(reply)
 	case "android":
 		reply, err := collectAndroidStatus(ctx, in)
 		if err != nil {
