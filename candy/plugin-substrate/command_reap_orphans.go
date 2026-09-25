@@ -143,9 +143,11 @@ func ephemeralUnderlyingResourceAlive(ctx context.Context, exec *sdk.Executor, n
 		return check.Run() == nil
 	case "kubevirt":
 		// A kind:kubevirt deploy's live identity is its VirtualMachine CR (namespace-
-		// scoped). Probe via kubectl with the persisted context/namespace when present —
-		// conservative on any decode/exec failure (assume alive, never orphan-reap a
-		// possibly-live VM on an inconclusive probe).
+		// scoped). Conservative by construction: if kubectl is absent there is no way to
+		// probe, so assume ALIVE (never reap a possibly-live VM on an inconclusive probe).
+		if _, lerr := osexec.LookPath("kubectl"); lerr != nil {
+			return true
+		}
 		ns := name
 		vm := name
 		ctxArgs := []string{}

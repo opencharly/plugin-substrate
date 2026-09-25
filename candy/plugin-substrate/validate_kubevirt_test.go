@@ -2,7 +2,10 @@ package substratekind
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
+
+	"github.com/opencharly/spec/spec"
 )
 
 // TestValidateKubevirtDeep covers the XOR rules the closedness-only host gate
@@ -71,18 +74,19 @@ func TestStatusCollect_KubevirtDispatch(t *testing.T) {
 	// DISPATCH must reach it (not the "unsupported word" branch). We assert the error
 	// message is NOT the unsupported-word one.
 	_, err := statusCollect(t.Context(), "kubevirt", []byte(`{}`))
-	if err != nil && err.Error() != "" {
-		if containsStr(err.Error(), "unsupported word") {
-			t.Fatalf("kubevirt must be a supported status word, got: %v", err)
-		}
+	if err != nil && strings.Contains(err.Error(), "unsupported word") {
+		t.Fatalf("kubevirt must be a supported status word, got: %v", err)
 	}
 }
 
-func containsStr(s, sub string) bool {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return true
-		}
+// TestEphemeralUnderlyingResourceAlive_Kubevirt proves the kubevirt reap probe is
+// CONSERVATIVE when it cannot probe (kubectl absent → assume alive, never reap a
+// possibly-live VM). It is a pure LookPath guard, so it is deterministic.
+func TestEphemeralUnderlyingResourceAlive_Kubevirt(t *testing.T) {
+	// Force kubectl to be unfindable for this test.
+	t.Setenv("PATH", t.TempDir())
+	node := spec.Deploy{Target: "kubevirt", KubeVirtState: &spec.KubeVirtDeployState{VMName: "kv", Namespace: "vms"}}
+	if !ephemeralUnderlyingResourceAlive(t.Context(), nil, "kv", node) {
+		t.Fatal("kubevirt reap probe must be conservative (alive) when kubectl is absent")
 	}
-	return false
 }

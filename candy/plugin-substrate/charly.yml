@@ -21,8 +21,8 @@ plugin-substrate:
             the cleanly-movable status collectors — pod live (snapshot + live mounts + tool probes) + local
             (install-ledger) + the probes — relocated here from charly core, reached by the host's
             `charly status` fan-out; the deploy-cone-coupled enrichment + the vm/kubernetes/kubevirt/android collectors
-            stay host-side until K5. kubevirt is the 6th deploy substrate (a KubeVirt VM on a cluster),
-            declaring the ssh venue WITHOUT exclusive_venue + a deep OpValidate (the source-arm XOR + GPU resource XOR).
+            live here too (relocated from core in K5). kubevirt is the 6th deploy substrate (a KubeVirt VM on a
+            cluster), declaring the ssh venue WITHOUT exclusive_venue + a deep OpValidate (the source-arm XOR + GPU resource XOR).
         plugin:
             source: github.com/opencharly/plugin-substrate/candy/plugin-substrate
             providers:
