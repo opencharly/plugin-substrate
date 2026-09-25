@@ -11,15 +11,14 @@ import (
 )
 
 // status_kubevirt.go — the KubeVirt substrate's OpStatus. A kind:kubevirt deploy
-// runs a cluster-scheduled VM; the LIVE VirtualMachine state is owned by
-// candy/plugin-kubevirt (reachable here via InvokeProvider(verb:kubevirt)), while
-// the DEPLOY-TREE facts (which kind:kubevirt nodes exist, their cluster/context,
-// the persisted kubevirt_state venue identity) are resolved from the same
-// resolved-project envelope the kubernetes collector uses (R3). This collector
-// emits one row per declared kind:kubevirt deploy, with State from kubevirt_state
-// when present and a best-effort live probe otherwise — mirroring status_vm.go's
-// "live rows only + separate deploy-cone enrichment" split (the flat fan-out's
-// enrichKubevirtRow applies the deploy-config detail).
+// runs a cluster-scheduled VM; this collector reports the DEPLOY-TREE state — which
+// kind:kubevirt nodes exist, their cluster/context, and the persisted kubevirt_state
+// venue identity — resolved from the same resolved-project envelope the kubernetes
+// collector uses (R3). It performs NO live cluster probe: the LIVE VirtualMachine
+// state is a `kubevirt:` check (candy/plugin-kubevirt), not a `charly status` row,
+// exactly as the kubernetes collector reports generation state while `kube:` probes
+// the live cluster. The flat fan-out's enrichKubevirtRow applies the deploy-config
+// detail (mirroring status_vm.go's own split).
 
 // collectKubevirtStatus serves the kubevirt substrate's OpStatusCollect.
 func collectKubevirtStatus(ctx context.Context, req spec.SubstrateStatusRequest) (spec.SubstrateStatusReply, error) {
@@ -27,11 +26,22 @@ func collectKubevirtStatus(ctx context.Context, req spec.SubstrateStatusRequest)
 	if err != nil {
 		return spec.SubstrateStatusReply{}, fmt.Errorf("kubevirt status-collect: %w", err)
 	}
+	return spec.SubstrateStatusReply{Rows: buildKubevirtRows(rp, req.RunMode)}, nil
+}
+
+// buildKubevirtRows is the PURE row-builder the collector delegates to (so it is
+// directly unit-testable without the reverse channel): one row per declared
+// kind:kubevirt deploy, with Status from the persisted kubevirt_state when present
+// ("deployed") or "not-deployed" otherwise, and the cluster/context resolved from
+// kubevirt_state or the referenced kind:kubevirt template.
+func buildKubevirtRows(rp *spec.ResolvedProject, runMode string) []spec.DeploymentStatus {
+	if rp == nil {
+		return nil
+	}
 	entries := kubevirtDeployEntries(rp.Deploy)
 	if len(entries) == 0 {
-		return spec.SubstrateStatusReply{}, nil
+		return nil
 	}
-
 	rows := make([]spec.DeploymentStatus, 0, len(entries))
 	for _, name := range entries {
 		node := rp.Deploy[name]
@@ -40,11 +50,11 @@ func collectKubevirtStatus(ctx context.Context, req spec.SubstrateStatusRequest)
 			Source:    "cluster",
 			Image:     kubevirtImageRef(name, node),
 			Container: name,
-			RunMode:   req.RunMode,
+			RunMode:   runMode,
 		}
 		// The persisted venue identity (kubevirt_state) is the deploy-tree truth:
-		// the cluster/context the VM landed in + the VM name. A deploy with no
-		// state has never been applied → "not-deployed".
+		// the cluster/context the VM landed in + the VM name (domain-scoped). A
+		// deploy with no state has never been applied → "not-deployed".
 		if node != nil && node.KubeVirtState != nil && node.KubeVirtState.VMName != "" {
 			row.Status = "deployed"
 			row.Network = node.KubeVirtState.KubeContext
@@ -61,7 +71,7 @@ func collectKubevirtStatus(ctx context.Context, req spec.SubstrateStatusRequest)
 		}
 		rows = append(rows, row)
 	}
-	return spec.SubstrateStatusReply{Rows: rows}, nil
+	return rows
 }
 
 // kubevirtDeployEntries returns the names of every kind:kubevirt deploy in the

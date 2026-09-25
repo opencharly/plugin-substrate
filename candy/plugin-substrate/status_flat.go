@@ -330,12 +330,19 @@ func (c *flatCollector) enrichVmRow(cs *spec.DeploymentStatus, opts flatCollectO
 // the kubevirt analogue of enrichVmRow. The state's ssh_port is surfaced as a
 // host->guest:22 port mapping (the managed virtctl port-forward the deploy SSHes
 // through). Absence is normal: the row still shows, just unenriched.
+//
+// Lookup goes through lookupDeploy (the bed-rolled key shapes too), and the
+// kubevirt entry is identified by its discriminator so a same-named pod deploy is
+// not matched.
 func (c *flatCollector) enrichKubevirtRow(cs *spec.DeploymentStatus, opts flatCollectOpts) {
 	if opts.Deploy == nil || opts.Deploy.Deploy == nil {
 		return
 	}
-	node, ok := opts.Deploy.Deploy[cs.Image]
-	if !ok || node.KubeVirtState == nil {
+	node, ok := c.lookupDeploy(cs.Image, cs.Instance, cs.Container)
+	if !ok {
+		return
+	}
+	if node.KubeVirtState == nil {
 		return
 	}
 	st := node.KubeVirtState

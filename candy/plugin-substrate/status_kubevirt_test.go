@@ -64,32 +64,40 @@ func TestKubevirtSpecFor(t *testing.T) {
 	}
 }
 
-// TestCollectKubevirtStatus_RowLogic exercises collectKubevirtStatus's pure per-entry
-// logic (deployed vs not-deployed from kubevirt_state + the template context) via its
-// constituent pieces — the InvokeProvider("build","project") fetch itself is proven live
-// by the same precedent the kubernetes collector test cites.
-func TestCollectKubevirtStatus_RowLogic(t *testing.T) {
-	deploy := map[string]*spec.Deploy{
-		"kv-deployed": {Target: "kubevirt", Image: "kv-deployed", KubeVirtState: &spec.KubeVirtDeployState{
-			VMName: "charly-kv-deployed", Namespace: "vms", KubeContext: "ctx_prod", SSHPort: 2224,
-		}},
-		"kv-fresh": {Target: "kubevirt", Image: "kv-fresh", From: "prod"},
-		"a-pod":    {Target: "pod", Image: "redis"},
+// TestBuildKubevirtRows exercises the collector's PURE row-builder directly (the
+// collector body delegates to it): deployed vs not-deployed, the namespace/name
+// container, and the context resolution. This is the collector function under test,
+// not its constituents.
+func TestBuildKubevirtRows(t *testing.T) {
+	tmpl := kubevirtTemplateBody(t, "prod", "ctx_prod")
+	rp := &spec.ResolvedProject{
+		Deploy: map[string]*spec.Deploy{
+			"kv-deployed": {Target: "kubevirt", Image: "kv-deployed", KubeVirtState: &spec.KubeVirtDeployState{
+				VMName: "charly-kv-deployed", Namespace: "vms", KubeContext: "ctx_prod", SSHPort: 2224,
+			}},
+			"kv-fresh": {Target: "kubevirt", Image: "kv-fresh", From: "prod"},
+			"a-pod":    {Target: "pod", Image: "redis"},
+		},
+		Templates: &spec.ProjectTemplates{KubeVirt: map[string]spec.RawBody{"prod": tmpl}},
 	}
-	entries := kubevirtDeployEntries(deploy)
-	if len(entries) != 2 {
-		t.Fatalf("entries = %v, want 2 kubevirt deploys (pod ignored)", entries)
+	rows := buildKubevirtRows(rp, "quadlet")
+	if len(rows) != 2 {
+		t.Fatalf("rows = %d, want 2 (pod ignored): %+v", len(rows), rows)
 	}
-
-	// deployed row: state-driven status + namespace/name container + context network.
-	d := deploy["kv-deployed"]
-	if d.KubeVirtState.VMName == "" || d.KubeVirtState.Namespace != "vms" {
-		t.Fatalf("deployed row state = %+v, want a persisted venue identity", d.KubeVirtState)
+	byImage := map[string]spec.DeploymentStatus{}
+	for _, r := range rows {
+		byImage[r.Image] = r
 	}
-	// fresh row: template-resolved context via kubevirtSpecFor.
-	templates := &spec.ProjectTemplates{KubeVirt: map[string]spec.RawBody{"prod": kubevirtTemplateBody(t, "prod", "ctx_prod")}}
-	if ks := kubevirtSpecFor(templates, deploy["kv-fresh"]); ks == nil || ks.KubeContext != "ctx_prod" {
-		t.Fatalf("fresh row context = %+v, want ctx_prod", ks)
+	dep := byImage["kv-deployed"]
+	if dep.Status != "deployed" || dep.Container != "vms/charly-kv-deployed" || dep.Network != "ctx_prod" {
+		t.Errorf("deployed row = %+v, want deployed/vms:charly-kv-deployed/ctx_prod", dep)
+	}
+	fresh := byImage["kv-fresh"]
+	if fresh.Status != "not-deployed" || fresh.Network != "ctx_prod" {
+		t.Errorf("fresh row = %+v, want not-deployed/ctx_prod (from the template)", fresh)
+	}
+	if buildKubevirtRows(nil, "") != nil {
+		t.Error("nil ResolvedProject must yield no rows")
 	}
 }
 
