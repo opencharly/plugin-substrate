@@ -140,16 +140,21 @@ func (c *flatCollector) collectFlat(ctx context.Context, includeAll bool) ([]spe
 	for i := range vmRows {
 		c.enrichVmRow(&vmRows[i], opts)
 	}
+	kubevirtRows := c.collectWord(ctx, "kubevirt", opts)
+	for i := range kubevirtRows {
+		c.enrichKubevirtRow(&kubevirtRows[i], opts)
+	}
 	podRows := c.collectWord(ctx, "pod", opts)
 	for i := range podRows {
 		c.enrichOne(&podRows[i], c.rt.RunEngine)
 	}
 
-	results := make([]spec.DeploymentStatus, 0, len(localRows)+len(kubernetesRows)+len(androidRows)+len(vmRows)+len(podRows))
+	results := make([]spec.DeploymentStatus, 0, len(localRows)+len(kubernetesRows)+len(androidRows)+len(vmRows)+len(kubevirtRows)+len(podRows))
 	results = append(results, localRows...)
 	results = append(results, kubernetesRows...)
 	results = append(results, androidRows...)
 	results = append(results, vmRows...)
+	results = append(results, kubevirtRows...)
 	results = append(results, podRows...)
 
 	sort.SliceStable(results, func(i, j int) bool {
@@ -314,6 +319,39 @@ func (c *flatCollector) enrichVmRow(cs *spec.DeploymentStatus, opts flatCollectO
 	if state.SSHPort > 0 {
 		cs.Ports = append(cs.Ports, spec.PortMapping{
 			HostPort: state.SSHPort,
+			CtrPort:  22,
+			Proto:    "tcp",
+		})
+	}
+}
+
+// enrichKubevirtRow fills the cluster/venue detail from the matching kind:kubevirt
+// deploy entry's kubevirt_state (~/.config/charly/charly.yml) when one exists —
+// the kubevirt analogue of enrichVmRow. The state's ssh_port is surfaced as a
+// host->guest:22 port mapping (the managed virtctl port-forward the deploy SSHes
+// through). Absence is normal: the row still shows, just unenriched.
+//
+// Lookup goes through lookupDeploy (the bed-rolled key shapes too), and the
+// kubevirt entry is identified by its discriminator so a same-named pod deploy is
+// not matched.
+func (c *flatCollector) enrichKubevirtRow(cs *spec.DeploymentStatus, opts flatCollectOpts) {
+	if opts.Deploy == nil || opts.Deploy.Deploy == nil {
+		return
+	}
+	node, ok := c.lookupDeploy(cs.Image, cs.Instance, cs.Container)
+	if !ok {
+		return
+	}
+	if node.KubeVirtState == nil {
+		return
+	}
+	st := node.KubeVirtState
+	if st.Cluster != "" {
+		cs.Tunnel = st.Cluster
+	}
+	if st.SSHPort > 0 {
+		cs.Ports = append(cs.Ports, spec.PortMapping{
+			HostPort: st.SSHPort,
 			CtrPort:  22,
 			Proto:    "tcp",
 		})

@@ -45,15 +45,17 @@ import (
 
 const calver = "2026.196.0600"
 
-// substrateWords is the ONE list of words this provider serves — pod/vm/kubernetes/local/android.
-var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android"}
+// substrateWords is the ONE list of words this provider serves — pod/vm/kubernetes/local/android/kubevirt.
+var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android", "kubevirt"}
 
 // substrateTraits is the per-word DECLARED #DeployTraits (P9) — the SINGLE source the kernel
 // consults for each substrate's deploy behaviour. kit.StampDescent stamps these onto every
 // node's spec.DescentDescriptor (resolved by the host's registry-backed deployTraitsFor), so
 // every consult site reads the behaviour off node.Descent BY TRAIT — never by switching on the
 // kind word. Canonical table (Appendix B): pod=container+image_backed+image_context;
-// vm=ssh+machine_venue+exclusive_venue; local=shell+machine_venue; kubernetes=shell+image_context+
+// vm=ssh+machine_venue+exclusive_venue; kubevirt=ssh+image_backed (a cluster-scheduled VM: the
+// ssh venue WITHOUT exclusive_venue, since it holds no host-resource lease — the host arbiter is
+// skipped); local=shell+machine_venue; kubernetes=shell+image_context+
 // leaf_only; android=parent; a zero-value word = external-in-place. pod additionally declares
 // bracketed_lifecycle (deploy-cone cutover 1, item 1): its Start/Stop accept direct-mode CLI
 // opts AND need the Q1 resource-arbiter claim bracketed — vm manages its own venue lifecycle +
@@ -61,6 +63,7 @@ var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android"}
 var substrateTraits = map[string]*spec.DeployTraits{
 	"pod":        {Venue: "container", ImageBacked: true, ImageContext: true, BracketedLifecycle: true, BedTarget: true},
 	"vm":         {Venue: "ssh", MachineVenue: true, ExclusiveVenue: true, BedTarget: true, SupportsEphemeral: true, SupportsFromSnapshot: true},
+	"kubevirt":   {Venue: "ssh", ImageBacked: true, BedTarget: true, SupportsEphemeral: true, SupportsFromSnapshot: true},
 	"local":      {Venue: "shell", MachineVenue: true, BedTarget: true},
 	"kubernetes": {Venue: "shell", ImageContext: true, LeafOnly: true},
 	"android":    {Venue: "parent", BedTarget: true},
@@ -98,7 +101,7 @@ func CliMain(args []string) int {
 func NewMeta() pb.PluginMetaServer {
 	caps := make([]sdk.ProvidedCapability, 0, len(substrateWords)+2)
 	for _, w := range substrateWords {
-		caps = append(caps, sdk.ProvidedCapability{Class: "kind", Word: w, Structural: true, Validates: w == "vm", DeployTraits: substrateTraits[w]})
+		caps = append(caps, sdk.ProvidedCapability{Class: "kind", Word: w, Structural: true, Validates: w == "vm" || w == "kubevirt", DeployTraits: substrateTraits[w]})
 	}
 	caps = append(caps, sdk.ProvidedCapability{Class: "command", Word: "reap-orphans"})
 	caps = append(caps, sdk.ProvidedCapability{Class: "verb", Word: "status-fanout"})
@@ -140,21 +143,34 @@ func (provider) Invoke(ctx context.Context, req *pb.InvokeRequest) (*pb.InvokeRe
 	case sdk.OpLoad:
 		return substrateLoad(req)
 	case sdk.OpValidate:
-		// F7/C8: the deep check ONLY the "vm" capability declares (Validates:true, NewMeta) —
-		// the host dispatches this kind-blindly, so a defensive check here (never a host-side
-		// branch) confirms the word matches what this file actually implements.
-		if req.GetReserved() != "vm" {
-			return nil, fmt.Errorf("plugin-substrate: OpValidate unsupported for word %q (only %q declares Validates)", req.GetReserved(), "vm")
+		// F7/C8: the deep check ONLY the "vm" + "kubevirt" capabilities declare
+		// (Validates:true, NewMeta) — the host dispatches this kind-blindly, so a
+		// defensive check here (never a host-side branch) confirms the word matches
+		// what this file actually implements.
+		switch req.GetReserved() {
+		case "vm":
+			diags, verr := validateVmDeep(req.GetParamsJson())
+			if verr != nil {
+				return nil, verr
+			}
+			out, merr := json.Marshal(diags)
+			if merr != nil {
+				return nil, fmt.Errorf("plugin-substrate: marshal diagnostics: %w", merr)
+			}
+			return &pb.InvokeReply{ResultJson: out}, nil
+		case "kubevirt":
+			diags, verr := validateKubevirtDeep(req.GetParamsJson())
+			if verr != nil {
+				return nil, verr
+			}
+			out, merr := json.Marshal(diags)
+			if merr != nil {
+				return nil, fmt.Errorf("plugin-substrate: marshal diagnostics: %w", merr)
+			}
+			return &pb.InvokeReply{ResultJson: out}, nil
+		default:
+			return nil, fmt.Errorf("plugin-substrate: OpValidate unsupported for word %q (only %q + %q declare Validates)", req.GetReserved(), "vm", "kubevirt")
 		}
-		diags, verr := validateVmDeep(req.GetParamsJson())
-		if verr != nil {
-			return nil, verr
-		}
-		out, merr := json.Marshal(diags)
-		if merr != nil {
-			return nil, fmt.Errorf("plugin-substrate: marshal diagnostics: %w", merr)
-		}
-		return &pb.InvokeReply{ResultJson: out}, nil
 	case sdk.OpResolve:
 		// The substrate-template de-type (Cutover I): project an opaque local:/android:
 		// TEMPLATE body into a Resolved* envelope the kernel consumes.
