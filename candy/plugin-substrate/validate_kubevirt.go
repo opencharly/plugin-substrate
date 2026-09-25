@@ -22,7 +22,10 @@ import (
 //   - each gpus[] entry sets EXACTLY ONE of resource_name / device_name.
 //   - instancetype XOR explicit cpu (a matcher + an inline domain CPU conflict).
 type kubevirtValidateBody struct {
-	Source struct {
+	// Source is a POINTER so the deploy shape (no `source:` block — it carries
+	// `from:`/`image:` instead) is distinguishable from a template that AUTHORS an
+	// empty/partial source. Source-level rules apply to the TEMPLATE shape only.
+	Source *struct {
 		Kind         string `json:"kind"`
 		Image        string `json:"image"`
 		StorageClass string `json:"storage_class"`
@@ -50,7 +53,10 @@ var kubevirtSourceKinds = map[string]bool{
 }
 
 // validateKubevirtDeep runs the kubevirt kind's deep OpValidate check against the
-// raw authored entity body the host threads via op.Params.
+// raw authored entity body the host threads via op.Params. Source-level rules apply
+// ONLY when a `source:` block is authored (the TEMPLATE shape); the DEPLOY shape
+// (`from:`/`image:`, no source) is skipped for those, matching validateVmDeep's arm
+// selectivity.
 func validateKubevirtDeep(paramsJSON json.RawMessage) (spec.Diagnostics, error) {
 	var body kubevirtValidateBody
 	if len(paramsJSON) > 0 {
@@ -60,26 +66,29 @@ func validateKubevirtDeep(paramsJSON json.RawMessage) (spec.Diagnostics, error) 
 	}
 
 	var diags spec.Diagnostics
-	if body.Source.Kind == "" {
-		diags.Items = append(diags.Items, spec.Diagnostic{
-			Severity: "error",
-			Path:     "source.kind",
-			Message:  "must be one of container_disk | data_volume | pvc | clone",
-		})
-	} else if !kubevirtSourceKinds[body.Source.Kind] {
-		diags.Items = append(diags.Items, spec.Diagnostic{
-			Severity: "error",
-			Path:     "source.kind",
-			Message:  fmt.Sprintf("%q is not a known kubevirt source kind (one of container_disk | data_volume | pvc | clone)", body.Source.Kind),
-		})
-	}
-	// container_disk forbids storage_class (a containerDisk is not PVC-backed).
-	if body.Source.Kind == "container_disk" && body.Source.StorageClass != "" {
-		diags.Items = append(diags.Items, spec.Diagnostic{
-			Severity: "error",
-			Path:     "source.storage_class",
-			Message:  "is not valid on a container_disk source (a containerDisk is not a PVC-backed volume)",
-		})
+	if body.Source != nil {
+		switch {
+		case body.Source.Kind == "":
+			diags.Items = append(diags.Items, spec.Diagnostic{
+				Severity: "error",
+				Path:     "source.kind",
+				Message:  "must be one of container_disk | data_volume | pvc | clone",
+			})
+		case !kubevirtSourceKinds[body.Source.Kind]:
+			diags.Items = append(diags.Items, spec.Diagnostic{
+				Severity: "error",
+				Path:     "source.kind",
+				Message:  fmt.Sprintf("%q is not a known kubevirt source kind (one of container_disk | data_volume | pvc | clone)", body.Source.Kind),
+			})
+		}
+		// container_disk forbids storage_class (a containerDisk is not PVC-backed).
+		if body.Source.Kind == "container_disk" && body.Source.StorageClass != "" {
+			diags.Items = append(diags.Items, spec.Diagnostic{
+				Severity: "error",
+				Path:     "source.storage_class",
+				Message:  "is not valid on a container_disk source (a containerDisk is not a PVC-backed volume)",
+			})
+		}
 	}
 
 	// gpus[]: exactly one of resource_name / device_name per entry.
