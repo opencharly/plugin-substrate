@@ -17,7 +17,7 @@ plugin-substrate:
             to the former in-proc standaloneKind decode. COMPILED-IN (in the embedded compiled_plugins:),
             like the tier-1 kinds and group, because these are core deploy primitives every box/submodule
             must always resolve; also serves out-of-process via cmd/serve. P14a added the COLLECTOR
-            OpStatusCollect on the same kind-provider Invoke (dispatched by word pod/vm/kubernetes/local/android/kubevirt):
+            OpStatusCollect on the same kind-provider Invoke (dispatched by word pod/vm/kubernetes/local/android/kindcluster/kubevirt):
             the cleanly-movable status collectors — pod live (snapshot + live mounts + tool probes) + local
             (install-ledger) + the probes — relocated here from charly core, reached by the host's
             `charly status` fan-out; the deploy-cone-coupled enrichment + the vm/kubernetes/kubevirt/android collectors
