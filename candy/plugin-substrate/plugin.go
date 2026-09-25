@@ -66,13 +66,17 @@ var substrateTraits = map[string]*spec.DeployTraits{
 	"local":      {Venue: "shell", MachineVenue: true, BedTarget: true},
 	"kubernetes": {Venue: "shell", ImageContext: true, LeafOnly: true},
 	"android":    {Venue: "parent", BedTarget: true},
-	// kindcluster provisions node containers on the OPERATOR HOST engine (shell venue)
-	// and is addressed by kubeconfig context, so it is a chain LEAF like kubernetes.
+	// kindcluster provisions node containers on the OPERATOR HOST engine at DEPLOY-ADD
+	// (the deploy:kindcluster provider runs `kind create cluster` + applies the workload
+	// itself) and manages NO charly-side container/VM lifecycle — so it is
+	// EXTERNAL-IN-PLACE (venue "none", like android/exampledeploy), NOT a "shell"
+	// service bed: the check runner must apply it in place during deploy add, never run
+	// the pod-style `charly config`/`charly start` (measured: a shell venue made the
+	// runner try `config` and fail with "image not found in local storage").
 	// BedTarget: a disposable kindcluster bed runs a live cluster (the R10 beds).
 	// SupportsEphemeral: the cluster is create/delete-able per run, and the ephemeral
-	// TTL seam's reap-orphans liveness probe has a kindcluster arm (command_reap_orphans.go,
-	// `kind get clusters` scoped to the deploy's engine).
-	"kindcluster": {Venue: "shell", ImageContext: true, LeafOnly: true, BedTarget: true, SupportsEphemeral: true},
+	// TTL seam's reap-orphans liveness probe has a kindcluster arm.
+	"kindcluster": {Venue: "none", ImageContext: true, LeafOnly: true, BedTarget: true, SupportsEphemeral: true},
 }
 
 // NewProvider returns the substrate kind provider for in-proc registration or out-of-proc serving.
