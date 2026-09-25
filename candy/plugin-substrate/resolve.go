@@ -51,6 +51,16 @@ func resolveSubstrateTemplate(in spec.SubstrateTemplateResolveRequest) ([]byte, 
 			Raw:               in.Kubernetes.Kubernetes,
 		}}
 		return json.Marshal(reply)
+	case in.Kindcluster != nil:
+		var k spec.Kindcluster
+		if err := json.Unmarshal(in.Kindcluster.Kindcluster, &k); err != nil {
+			return nil, fmt.Errorf("kindcluster resolve: decode: %w", err)
+		}
+		reply := spec.KindclusterResolveReply{Resolved: &spec.ResolvedKindcluster{
+			KubeconfigContext: k.KubeconfigContext,
+			Raw:               in.Kindcluster.Kindcluster,
+		}}
+		return json.Marshal(reply)
 	case in.Android != nil:
 		var a spec.Android
 		if err := json.Unmarshal(in.Android.Android, &a); err != nil {
