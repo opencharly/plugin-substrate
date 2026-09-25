@@ -69,11 +69,10 @@ var substrateTraits = map[string]*spec.DeployTraits{
 	// kindcluster provisions node containers on the OPERATOR HOST engine (shell venue)
 	// and is addressed by kubeconfig context, so it is a chain LEAF like kubernetes.
 	// BedTarget: a disposable kindcluster bed runs a live cluster (the R10 beds).
-	// SupportsEphemeral is FALSE (like kubernetes): the ephemeral TTL/register/teardown
-	// seam's reap-orphans liveness probe has no kindcluster arm yet, so `ephemeral: true`
-	// is rejected until that seam is wired — `disposable: true` (the check-bed lifecycle)
-	// is unaffected and is what the R10 beds use.
-	"kindcluster": {Venue: "shell", ImageContext: true, LeafOnly: true, BedTarget: true},
+	// SupportsEphemeral: the cluster is create/delete-able per run, and the ephemeral
+	// TTL seam's reap-orphans liveness probe has a kindcluster arm (command_reap_orphans.go,
+	// `kind get clusters` scoped to the deploy's engine).
+	"kindcluster": {Venue: "shell", ImageContext: true, LeafOnly: true, BedTarget: true, SupportsEphemeral: true},
 }
 
 // NewProvider returns the substrate kind provider for in-proc registration or out-of-proc serving.

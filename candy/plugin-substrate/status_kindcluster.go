@@ -20,6 +20,7 @@ import (
 	"sort"
 
 	"github.com/opencharly/sdk/deploykit"
+	"github.com/opencharly/sdk/kit"
 	"github.com/opencharly/spec/spec"
 )
 
@@ -95,10 +96,11 @@ func kindclusterImageRef(name string, node *spec.Deploy) string {
 }
 
 // kindclusterClusterName is the kind cluster name a deploy provisions. It mirrors
-// the deploy preresolver's derivation (the sanitized deploy name) so the status
-// row names the same cluster the create leg does.
+// the deploy preresolver's derivation — candy/plugin-kube's kindcluster.go
+// `kindClusterName` calls `kit.SanitizeDeployName` on the deploy name — so the
+// status row names the SAME cluster the create leg does.
 func kindclusterClusterName(name string) string {
-	return name
+	return kit.SanitizeDeployName(name)
 }
 
 // kindclusterSpecFor resolves the kind:kindcluster template referenced by node.From
