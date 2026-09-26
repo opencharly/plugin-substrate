@@ -1,5 +1,5 @@
 // Package substratekind is the importable form of charly's SUBSTRATE structural KINDs —
-// pod / vm / kubernetes / local / android / kindcluster — relocated out of charly's module (C2-substrate; formerly
+// pod / vm / kubernetes / local / android / kubevirt / kindcluster — relocated out of charly's module (C2-substrate; formerly
 // the shared built-in standaloneKind in charly/plugin_substrate.go). ONE provider serves all
 // these words; Describe advertises each with Structural:true.
 //
@@ -201,7 +201,7 @@ func (provider) Invoke(ctx context.Context, req *pb.InvokeRequest) (*pb.InvokeRe
 	case sdk.OpStatusCollect:
 		// P14a + K5: the substrate COLLECTOR OpStatus. The host's status
 		// fan-out reaches the cleanly-movable collectors (pod live + local,
-		// vm, kubernetes, kindcluster) here, by word (pod/vm/kubernetes/local/android/kindcluster). android alone
+		// vm, kubernetes, kubevirt, kindcluster) here, by word (pod/vm/kubernetes/local/android/kubevirt/kindcluster). android alone
 		// still defers (it merges PROJECT + PER-MACHINE deploy config).
 		res, err := statusCollect(ctx, req.GetReserved(), req.GetParamsJson())
 		if err != nil {

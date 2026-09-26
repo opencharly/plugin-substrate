@@ -85,6 +85,7 @@ func TestEphemeralKindclusterLiveness_NoClusterIsDead(t *testing.T) {
 	}
 }
 
+// TestKindclusterSpecFor_ResolvesContext asserts the collector resolves a referenced
 // kindcluster template to its kubeconfig context via this provider's own resolve arm.
 func TestKindclusterSpecFor_ResolvesContext(t *testing.T) {
 	body, err := json.Marshal(spec.Kindcluster{KubeconfigContext: "kind-lab"})

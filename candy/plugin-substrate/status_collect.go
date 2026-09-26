@@ -3,7 +3,7 @@ package substratekind
 // status_collect.go — the substrate COLLECTOR OpStatus dispatch. flatCollector's status fan-out
 // (status_flat.go, K6 — the former charly/status_collector.go's collectFlat, moved WHOLE into
 // this package) reaches EVERY collector by a DIRECT in-package call (pod + local, P14a; vm + kubernetes +
-// android + kindcluster, K5) — the SAME one-provider-serves-every-word shape the C2-substrate kind decode uses,
+// android + kubevirt + kindcluster, K5) — the SAME one-provider-serves-every-word shape the C2-substrate kind decode uses,
 // now with no registry/wire round-trip needed for the in-package leg either. All words are
 // plugin-served — the in-proc SubstrateCollector registry this seam once deferred to no longer
 // has any registrants (see charly/status_substrate.go, deleted).
@@ -18,7 +18,7 @@ import (
 )
 
 // statusCollect dispatches sdk.OpStatusCollect by the reserved substrate word.
-// req.GetReserved() is the word (pod/vm/kubernetes/local/android/kindcluster); req.GetParamsJson()
+// req.GetReserved() is the word (pod/vm/kubernetes/local/android/kubevirt/kindcluster); req.GetParamsJson()
 // is the spec.SubstrateStatusRequest. Returns spec.SubstrateStatusReply as
 // ResultJson.
 func statusCollect(ctx context.Context, word string, reqJSON []byte) (*statusResult, error) {

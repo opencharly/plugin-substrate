@@ -158,7 +158,13 @@ func ephemeralUnderlyingResourceAlive(ctx context.Context, exec *sdk.Executor, n
 		if oerr != nil {
 			return true // can't probe → conservative: assume alive
 		}
-		want := name
+		// The created cluster name is kit.SanitizeDeployName(deployName) (the venue's
+		// ClusterName; the collector's kindclusterClusterName does the SAME). The
+		// ephemeral InstanceName, when set, is already the concrete cluster name. So
+		// compare against the SANITIZED fallback — an unsanitized deploy name would
+		// never match `kind get clusters` output and the live cluster would be
+		// mis-reported DEAD (the false positive this arm exists to prevent).
+		want := kindclusterClusterName(name)
 		if node.VmState != nil && node.VmState.Ephemeral != nil && node.VmState.Ephemeral.InstanceName != "" {
 			want = node.VmState.Ephemeral.InstanceName
 		}

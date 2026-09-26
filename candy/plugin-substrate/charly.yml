@@ -3,7 +3,7 @@ plugin-substrate:
     candy:
         version: 2026.196.0600
         description: |-
-            The SUBSTRATE structural deploy KINDS — pod / vm / kubernetes / local / android / kindcluster — relocated into
+            The SUBSTRATE structural deploy KINDS — pod / vm / kubernetes / local / android / kubevirt / kindcluster — relocated into
             ONE candy (C2-substrate; formerly the shared built-in standaloneKind). Each substrate kind is
             BOTH a standalone TEMPLATE (a bare `vm:`/`pod:` block → the typed template map uf.Pod/uf.VM/…,
             the PRIMARY VM authoring form) AND a DEPLOY (from:/image: cross-ref or resource members →

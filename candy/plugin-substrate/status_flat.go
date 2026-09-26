@@ -119,7 +119,7 @@ func newFlatCollector(ctx context.Context, rt *kit.ResolvedRuntime) *flatCollect
 	return c
 }
 
-// collectFlat collects status across every deployment substrate (pod/vm/kubernetes/local/android/kindcluster) — ALL
+// collectFlat collects status across every deployment substrate (pod/vm/kubernetes/local/android/kubevirt/kindcluster) — ALL
 // words fan out via a DIRECT in-package call to statusCollect (status_collect.go, same package)
 // — no registry, no wire round-trip for this leg (the fan-out dissolved the former "registry
 // blocker": these words are the SAME substrateWords this provider already owns). Applies the
