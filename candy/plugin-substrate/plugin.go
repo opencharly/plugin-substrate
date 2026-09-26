@@ -65,7 +65,7 @@ var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android", "ku
 var substrateTraits = map[string]*spec.DeployTraits{
 	"pod":        {Venue: "container", ImageBacked: true, ImageContext: true, BracketedLifecycle: true, BedTarget: true},
 	"vm":         {Venue: "ssh", MachineVenue: true, ExclusiveVenue: true, BedTarget: true, SupportsEphemeral: true, SupportsFromSnapshot: true},
-	"kubevirt":   {Venue: "ssh", ImageBacked: true, BedTarget: true, SupportsEphemeral: true, SupportsFromSnapshot: true},
+	"kubevirt":   {Venue: "kubevirt", ImageBacked: true, BedTarget: true, SupportsEphemeral: true, SupportsFromSnapshot: true},
 	"local":      {Venue: "shell", MachineVenue: true, BedTarget: true},
 	"kubernetes": {Venue: "shell", ImageContext: true, LeafOnly: true},
 	"android":    {Venue: "parent", BedTarget: true},
