@@ -89,7 +89,10 @@ func validateVmDeep(paramsJSON json.RawMessage) (spec.Diagnostics, error) {
 // a container_disk's is the SAME consumption as a cloud_image's — the arm is a prebuilt
 // guest disk seeded through cloud-init exactly like cloud_image, so the same
 // openssh-vs-openssh-server / sshd-vs-ssh dispatches apply when charly injects its SSH key
-// and packages. The remaining arms (bootc / clone / imported) carry no distro at all.
+// and packages. The OTHER arms carry no distro the renderers read: bootc (the disk is
+// installed from a bootc image), clone (the disk is the parent's), imported (an externally
+// managed disk), and iso (the INSTALLER owns the account — the answer file format lives on
+// the distro, and that arm declares `distro:` CUE-REQUIRED instead).
 var distroBearingSourceKinds = map[string]bool{
 	"cloud_image":    true,
 	"bootstrap":      true,

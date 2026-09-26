@@ -169,11 +169,13 @@ func TestValidateVmDeep_SourceDistro(t *testing.T) {
 		{"container_disk with an unknown distro", map[string]any{"kind": "container_disk", "image": "r@sha256:0", "distro": "omarchi"}, true},
 		{"container_disk with a known distro", map[string]any{"kind": "container_disk", "image": "r@sha256:0", "distro": "omarchy"}, false},
 		{"container_disk with the arch id", map[string]any{"kind": "container_disk", "image": "r@sha256:0", "distro": "arch"}, false},
-		// The presence controls: arms that carry no distro at all must NOT be asked for one,
-		// or every disk-backed or bootc VM would fail. Without these the check could be
-		// satisfied by demanding distro unconditionally.
+		// The presence controls: arms that carry no distro the renderers read must NOT be
+		// asked for one, or every disk-backed or bootc VM would fail. Without these the
+		// check could be satisfied by demanding distro unconditionally. `imported` is the
+		// real arm name (not the old `disk`); `iso` declares its distro CUE-REQUIRED, so it
+		// is not in distroBearingSourceKinds and must not be demanded here.
 		{"bootc carries no distro", map[string]any{"kind": "bootc", "box": "b"}, false},
-		{"disk carries no distro", map[string]any{"kind": "disk", "disk_path": "/d.qcow2"}, false},
+		{"imported carries no distro", map[string]any{"kind": "imported", "libvirt_name": "d", "disk_path": "/d.qcow2", "disk_format": "qcow2"}, false},
 		{"clone carries no distro", map[string]any{"kind": "clone", "from_vm": "v", "from_snapshot": "g"}, false},
 	}
 	for _, c := range cases {
