@@ -1,7 +1,7 @@
-// Package substratekind is the importable form of charly's 5 SUBSTRATE structural KINDs —
-// pod / vm / kubernetes / local / android — relocated out of charly's module (C2-substrate; formerly
+// Package substratekind is the importable form of charly's SUBSTRATE structural KINDs —
+// pod / vm / kubernetes / local / android / kubevirt / kindcluster — relocated out of charly's module (C2-substrate; formerly
 // the shared built-in standaloneKind in charly/plugin_substrate.go). ONE provider serves all
-// 5 words; Describe advertises each with Structural:true.
+// these words; Describe advertises each with Structural:true.
 //
 // PURE-ECHO seam. Unlike group (candy/plugin-group), a substrate value is RICH +
 // core-referencing (#Vm/#Deploy/#LibvirtDomain/… with host-canonicalized shorthand like
@@ -45,8 +45,9 @@ import (
 
 const calver = "2026.196.0600"
 
-// substrateWords is the ONE list of words this provider serves — pod/vm/kubernetes/local/android/kubevirt.
-var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android", "kubevirt"}
+// substrateWords is the ONE list of words this provider serves —
+// pod/vm/kubernetes/local/android/kubevirt/kindcluster.
+var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android", "kubevirt", "kindcluster"}
 
 // substrateTraits is the per-word DECLARED #DeployTraits (P9) — the SINGLE source the kernel
 // consults for each substrate's deploy behaviour. kit.StampDescent stamps these onto every
@@ -56,7 +57,8 @@ var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android", "ku
 // vm=ssh+machine_venue+exclusive_venue; kubevirt=ssh+image_backed (a cluster-scheduled VM: the
 // ssh venue WITHOUT exclusive_venue, since it holds no host-resource lease — the host arbiter is
 // skipped); local=shell+machine_venue; kubernetes=shell+image_context+
-// leaf_only; android=parent; a zero-value word = external-in-place. pod additionally declares
+// leaf_only; android=parent; kindcluster=external-in-place (venue none);
+// a zero-value word = external-in-place. pod additionally declares
 // bracketed_lifecycle (deploy-cone cutover 1, item 1): its Start/Stop accept direct-mode CLI
 // opts AND need the Q1 resource-arbiter claim bracketed — vm manages its own venue lifecycle +
 // resource claim via `charly vm start`/`stop`, so it leaves this false.
@@ -67,6 +69,17 @@ var substrateTraits = map[string]*spec.DeployTraits{
 	"local":      {Venue: "shell", MachineVenue: true, BedTarget: true},
 	"kubernetes": {Venue: "shell", ImageContext: true, LeafOnly: true},
 	"android":    {Venue: "parent", BedTarget: true},
+	// kindcluster provisions node containers on the OPERATOR HOST engine at DEPLOY-ADD
+	// (the deploy:kindcluster provider runs `kind create cluster` + applies the workload
+	// itself) and manages NO charly-side container/VM lifecycle — so it is
+	// EXTERNAL-IN-PLACE (venue "none", like android/exampledeploy), NOT a "shell"
+	// service bed: the check runner must apply it in place during deploy add, never run
+	// the pod-style `charly config`/`charly start` (measured: a shell venue made the
+	// runner try `config` and fail with "image not found in local storage").
+	// BedTarget: a disposable kindcluster bed runs a live cluster (the R10 beds).
+	// SupportsEphemeral: the cluster is create/delete-able per run, and the ephemeral
+	// TTL seam's reap-orphans liveness probe has a kindcluster arm.
+	"kindcluster": {Venue: "none", ImageContext: true, LeafOnly: true, BedTarget: true, SupportsEphemeral: true},
 }
 
 // NewProvider returns the substrate kind provider for in-proc registration or out-of-proc serving.
@@ -188,7 +201,7 @@ func (provider) Invoke(ctx context.Context, req *pb.InvokeRequest) (*pb.InvokeRe
 	case sdk.OpStatusCollect:
 		// P14a + K5: the substrate COLLECTOR OpStatus. The host's status
 		// fan-out reaches the cleanly-movable collectors (pod live + local,
-		// vm, kubernetes) here, by word (pod/vm/kubernetes/local/android). android alone
+		// vm, kubernetes, kubevirt, kindcluster) here, by word (pod/vm/kubernetes/local/android/kubevirt/kindcluster). android alone
 		// still defers (it merges PROJECT + PER-MACHINE deploy config).
 		res, err := statusCollect(ctx, req.GetReserved(), req.GetParamsJson())
 		if err != nil {
