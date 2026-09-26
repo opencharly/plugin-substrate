@@ -177,6 +177,11 @@ func TestValidateVmDeep_SourceDistro(t *testing.T) {
 		{"bootc carries no distro", map[string]any{"kind": "bootc", "box": "b"}, false},
 		{"imported carries no distro", map[string]any{"kind": "imported", "libvirt_name": "d", "disk_path": "/d.qcow2", "disk_format": "qcow2"}, false},
 		{"clone carries no distro", map[string]any{"kind": "clone", "from_vm": "v", "from_snapshot": "g"}, false},
+		// iso is distro-bearing in a DIFFERENT way: its `distro:` is CUE-REQUIRED on the arm,
+		// so the Go presence check must NOT also demand it (a duplicate demand would report
+		// twice). It is absent from distroBearingSourceKinds, so validateVmDeep raises no
+		// diagnostic for it here — the CUE layer owns that arm's distro presence.
+		{"iso is not Go-checked for distro (CUE-required on the arm)", map[string]any{"kind": "iso", "url": "https://iso.example/x.iso"}, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
