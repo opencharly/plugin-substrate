@@ -160,11 +160,28 @@ func TestValidateVmDeep_SourceDistro(t *testing.T) {
 		{"cloud_image with an unknown distro", map[string]any{"kind": "cloud_image", "distro": "ubunut"}, true},
 		{"cloud_image with a known distro", map[string]any{"kind": "cloud_image", "distro": "ubuntu"}, false},
 		{"bootstrap with a known distro", map[string]any{"kind": "bootstrap", "distro": "debian"}, false},
-		// The presence controls: arms that carry no distro at all must NOT be asked for one,
-		// or every disk-backed or bootc VM would fail. Without these the check could be
-		// satisfied by demanding distro unconditionally.
+		// container_disk is cloud_image-like: a prebuilt guest disk seeded through
+		// cloud-init, so the SAME openssh-vs-openssh-server / sshd-vs-ssh dispatches
+		// apply and an omitted distro is the same silent-unreachable-guest failure.
+		// The published corpus is a Cua Fleet image (Omarchy), so `omarchy` must be a
+		// valid id here too.
+		{"container_disk without distro", map[string]any{"kind": "container_disk", "image": "r@sha256:0"}, true},
+		{"container_disk with an unknown distro", map[string]any{"kind": "container_disk", "image": "r@sha256:0", "distro": "omarchi"}, true},
+		{"container_disk with a known distro", map[string]any{"kind": "container_disk", "image": "r@sha256:0", "distro": "omarchy"}, false},
+		{"container_disk with the arch id", map[string]any{"kind": "container_disk", "image": "r@sha256:0", "distro": "arch"}, false},
+		// The presence controls: arms that carry no distro the renderers read must NOT be
+		// asked for one, or every disk-backed or bootc VM would fail. Without these the
+		// check could be satisfied by demanding distro unconditionally. `imported` is the
+		// real arm name (not the old `disk`); `iso` declares its distro CUE-REQUIRED, so it
+		// is not in distroBearingSourceKinds and must not be demanded here.
 		{"bootc carries no distro", map[string]any{"kind": "bootc", "box": "b"}, false},
-		{"disk carries no distro", map[string]any{"kind": "disk", "disk_path": "/d.qcow2"}, false},
+		{"imported carries no distro", map[string]any{"kind": "imported", "libvirt_name": "d", "disk_path": "/d.qcow2", "disk_format": "qcow2"}, false},
+		{"clone carries no distro", map[string]any{"kind": "clone", "from_vm": "v", "from_snapshot": "g"}, false},
+		// iso is distro-bearing in a DIFFERENT way: its `distro:` is CUE-REQUIRED on the arm,
+		// so the Go presence check must NOT also demand it (a duplicate demand would report
+		// twice). It is absent from distroBearingSourceKinds, so validateVmDeep raises no
+		// diagnostic for it here — the CUE layer owns that arm's distro presence.
+		{"iso is not Go-checked for distro (CUE-required on the arm)", map[string]any{"kind": "iso", "url": "https://iso.example/x.iso"}, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

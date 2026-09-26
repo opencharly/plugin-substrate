@@ -85,9 +85,19 @@ func validateVmDeep(paramsJSON json.RawMessage) (spec.Diagnostics, error) {
 
 // distroBearingSourceKinds are the VmSource arms whose `distro:` the renderers consume.
 // A cloud_image's distro selects the guest package NAME, package MANAGER and sshd UNIT
-// name; a bootstrap's keys the embedded build vocabulary and the guest package manager.
-// The other arms (disk / from_vm / from_snapshot / bootc) carry no distro at all.
-var distroBearingSourceKinds = map[string]bool{"cloud_image": true, "bootstrap": true}
+// name; a bootstrap's keys the embedded build vocabulary and the guest package manager;
+// a container_disk's is the SAME consumption as a cloud_image's — the arm is a prebuilt
+// guest disk seeded through cloud-init exactly like cloud_image, so the same
+// openssh-vs-openssh-server / sshd-vs-ssh dispatches apply when charly injects its SSH key
+// and packages. The OTHER arms carry no distro the renderers read: bootc (the disk is
+// installed from a bootc image), clone (the disk is the parent's), imported (an externally
+// managed disk), and iso (the INSTALLER owns the account — the answer file format lives on
+// the distro, and that arm declares `distro:` CUE-REQUIRED instead).
+var distroBearingSourceKinds = map[string]bool{
+	"cloud_image":    true,
+	"bootstrap":      true,
+	"container_disk": true,
+}
 
 // validateSourceDistro enforces that a distro-bearing VM source declares `distro:`.
 //
