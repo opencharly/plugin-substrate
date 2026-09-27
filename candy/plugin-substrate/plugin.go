@@ -34,6 +34,7 @@ package substratekind
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -44,6 +45,9 @@ import (
 )
 
 const calver = "2026.196.0600"
+
+//go:embed schema/*.cue
+var schemaFS embed.FS
 
 // substrateWords is the ONE list of words this provider serves —
 // pod/vm/kubernetes/local/android/kubevirt/kindcluster.
@@ -98,12 +102,13 @@ func CliMain(args []string) int {
 	return 0
 }
 
-// NewMeta advertises the 5 STRUCTURAL substrate kind capabilities (Class "kind",
-// Structural:true) + the self-contained CUE schema (via sdk.NewMeta → BuildCapabilities).
-// Each declares InputDef:"" — the rich substrate value is validated HOST-SIDE against the
+// NewMeta advertises the 7 STRUCTURAL substrate kind capabilities (Class "kind",
+// Structural:true) + this plugin's OWN self-contained CUE schema (schema/substrate.cue,
+// served via sdk.NewMeta → BuildCapabilities): there is NO schema-less plugin. Each kind
+// declares InputDef:"" — the rich substrate value is validated HOST-SIDE against the
 // KEPT #<Kind>Value core def (runPluginKind → validateStandaloneKindValueCUE), NOT by this
-// served schema. The self-contained #SubstrateKindLoad def exists only to satisfy the
-// non-empty-schema load gate + document the seam. ONLY "vm" additionally declares
+// served schema; #SubstratePlugin documents the provider's declaration surface and satisfies
+// the uniform non-empty-schema contract. ONLY "vm" additionally declares
 // Validates:true (F7/C8) — its deep OpValidate check (validate_vm.go) closes the one proven
 // gap the host's closedness-only value gate cannot express (PCI-hostdev field concreteness);
 // pod/kubernetes/local/android declare no deep check and pay no extra OpValidate round-trip. Also
@@ -119,7 +124,7 @@ func NewMeta() pb.PluginMetaServer {
 	caps = append(caps, sdk.ProvidedCapability{Class: "command", Word: "reap-orphans"})
 	caps = append(caps, sdk.ProvidedCapability{Class: "verb", Word: "status-fanout"})
 	return sdk.NewMeta(calver, caps,
-		nil)
+		schemaFS)
 }
 
 type provider struct{ pb.UnimplementedProviderServer }
