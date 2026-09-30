@@ -83,7 +83,17 @@ func TestFlatCollector_LookupDeploy_KeyShapes(t *testing.T) {
 
 // --- flatCollector.enrichVmRow ---
 
-// TestEnrichVmRow covers the deploy-tree enrichment (SSH-port/network from a matching target:vm
+// vmDescent is the loader-STAMPED host-libvirt vm descent — the substrate plugin's declared
+// #DeployTraits (ssh venue + exclusive host-resource lease) projected by spec.DescentFromTraits.
+// Every node a LoadUnified'd project or a per-host overlay read produces carries this shape
+// (loaderkit.StampDeployDescents), so it is the realistic fixture for a persisted vm deploy node —
+// and deploykit.FindVmDeployNode now identifies a vm by this stamped trait, never by the
+// (unpersisted) `target:` word. Mirrors deploykit's own deploy_state_test.go vmDescent helper.
+func vmDescent() *spec.DescentDescriptor {
+	return spec.DescentFromTraits(&spec.DeployTraits{Venue: "ssh", MachineVenue: true, ExclusiveVenue: true})
+}
+
+// TestEnrichVmRow covers the deploy-tree enrichment (SSH-port/network from a matching vm
 // entry's vm_state).
 func TestEnrichVmRow(t *testing.T) {
 	cases := []struct {
@@ -98,12 +108,12 @@ func TestEnrichVmRow(t *testing.T) {
 			row:  spec.DeploymentStatus{Kind: spec.SubstrateVM, Image: "cachyos-gpu"},
 		},
 		{
-			name: "enriched from target:vm deploy vm_state",
+			name: "enriched from a descent-stamped vm deploy vm_state",
 			row:  spec.DeploymentStatus{Kind: spec.SubstrateVM, Image: "cachyos-gpu"},
 			deploy: &deploykit.DeployConfig{
 				Deploy: map[string]spec.DeployNode{
-					"vm:cachyos-gpu": {
-						Target:  "vm",
+					"cachyos-gpu": {
+						Descent: vmDescent(),
 						From:    "cachyos-gpu",
 						VmState: &spec.VmDeployState{SSHPort: 12228, SSHUser: "cachy", Backend: "libvirt"},
 					},
@@ -118,7 +128,7 @@ func TestEnrichVmRow(t *testing.T) {
 				Deploy: map[string]spec.DeployNode{
 					// deploy KEY (check-k3s-vm) != vm entity (k3s-vm).
 					"check-k3s-vm": {
-						Target:  "vm",
+						Descent: vmDescent(),
 						From:    "k3s-vm",
 						VmState: &spec.VmDeployState{SSHPort: 2225, SSHUser: "arch"},
 					},
@@ -131,7 +141,7 @@ func TestEnrichVmRow(t *testing.T) {
 			row:  spec.DeploymentStatus{Kind: spec.SubstrateVM, Image: "arch"},
 			deploy: &deploykit.DeployConfig{
 				Deploy: map[string]spec.DeployNode{
-					"arch": {Target: "vm", From: "arch", Network: "bridge0"},
+					"arch": {Descent: vmDescent(), From: "arch", Network: "bridge0"},
 				},
 			},
 			wantNet: "bridge0",

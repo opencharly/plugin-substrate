@@ -203,7 +203,7 @@ func (c *flatCollector) collectWord(ctx context.Context, word string, opts flatC
 // applies the deploy enrichment + resolves systemd state + lists provisioned secrets.
 func (c *flatCollector) collectSingle(ctx context.Context, image, instance string) (spec.DeploymentStatus, error) {
 	boxName := kit.ResolveBoxName(image)
-	runEngine := deploykit.ResolveBoxEngineForDeploy(boxName, instance, c.rt.RunEngine)
+	runEngine := deploykit.ResolveBoxEngineForDeploy(ctx, boxName, instance, c.rt.RunEngine)
 
 	req := spec.SubstrateStatusRequest{
 		Single:     true,
