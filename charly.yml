@@ -58,18 +58,18 @@ check-substrate:
         lifecycle: dev
         description: >-
             Sole R10 witness of the externalized substrate structural kinds (candy/plugin-substrate, C2-substrate), run inside the disposable eval VM: a BARE `local:` TEMPLATE (check-substrate-app, template shape → uf.Local) plus a nested `local:` DEPLOY member (check-substrate-member, deploy shape → uf.Deploy), BOTH decoded out of core through the compiled-in plugin-substrate. runPluginKind → foldSubstrateKind pre-decodes each node via the core loader, validates its value against the KEPT #LocalValue def, threads the canonical result to plugin-substrate's OpLoad, and folds the ECHO into uf.Local / uf.Deploy. The nested member applies check-substrate-layer INSIDE the guest via kit.NestedExecutor, and the marker check asserts /etc/check-substrate-marker in the GUEST — proving both substrate shapes reconstruct + deploy end-to-end off the operator's workstation, byte-equivalent to the former in-proc standaloneKind.
-    check-substrate-member:
-        local:
-            from: check-substrate-app
-            # NESTED under the vm node (tree position) → deploys INSIDE the guest via
-            # kit.NestedExecutor. No `host:` field: the venue comes from the parent.
-            plan:
-                - check: command=test -f /etc/check-substrate-marker && echo SUBSTRATE-DEPLOY-OK
-                  id: substrate-marker-in-guest
-                  description: the nested substrate local DEPLOY (folded into uf.Deploy via plugin-substrate) applied its inherited template's marker layer INSIDE the eval VM guest
-                  stdout:
-                    - contains: SUBSTRATE-DEPLOY-OK
-                  context:
-                    - runtime
-                  command:
-                    command: "test -f /etc/check-substrate-marker && echo SUBSTRATE-DEPLOY-OK"
+        check-substrate-member:
+            local:
+                from: check-substrate-app
+                # NESTED under the vm node (tree position) → deploys INSIDE the guest via
+                # kit.NestedExecutor. No `host:` field: the venue comes from the parent.
+                plan:
+                    - check: command=test -f /etc/check-substrate-marker && echo SUBSTRATE-DEPLOY-OK
+                      id: substrate-marker-in-guest
+                      description: the nested substrate local DEPLOY (folded into uf.Deploy via plugin-substrate) applied its inherited template's marker layer INSIDE the eval VM guest
+                      stdout:
+                        - contains: SUBSTRATE-DEPLOY-OK
+                      context:
+                        - runtime
+                      command:
+                        command: "test -f /etc/check-substrate-marker && echo SUBSTRATE-DEPLOY-OK"
