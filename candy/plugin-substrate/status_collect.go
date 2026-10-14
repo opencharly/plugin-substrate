@@ -71,6 +71,12 @@ func statusCollect(ctx context.Context, word string, reqJSON []byte) (*statusRes
 			return nil, fmt.Errorf("substrate status-collect android: %w", err)
 		}
 		return marshalStatusReply(reply)
+	case "firecracker":
+		reply, err := collectFirecrackerStatus(ctx, in)
+		if err != nil {
+			return nil, fmt.Errorf("substrate status-collect firecracker: %w", err)
+		}
+		return marshalStatusReply(reply)
 	default:
 		return nil, fmt.Errorf("substrate status-collect: unsupported word %q", word)
 	}

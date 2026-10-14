@@ -50,8 +50,8 @@ const calver = "2026.196.0600"
 var schemaFS embed.FS
 
 // substrateWords is the ONE list of words this provider serves —
-// pod/vm/kubernetes/local/android/kubevirt/kindcluster.
-var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android", "kubevirt", "kindcluster"}
+// pod/vm/kubernetes/local/android/kubevirt/kindcluster/firecracker.
+var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android", "kubevirt", "kindcluster", "firecracker"}
 
 // substrateTraits is the per-word DECLARED #DeployTraits (P9) — the SINGLE source the kernel
 // consults for each substrate's deploy behaviour. kit.StampDescent stamps these onto every
@@ -84,6 +84,21 @@ var substrateTraits = map[string]*spec.DeployTraits{
 	// SupportsEphemeral: the cluster is create/delete-able per run, and the ephemeral
 	// TTL seam's reap-orphans liveness probe has a kindcluster arm.
 	"kindcluster": {Venue: "none", ImageContext: true, LeafOnly: true, BedTarget: true, SupportsEphemeral: true},
+	// firecracker boots a microVM directly under KVM from a rootfs artefact + a kernel
+	// (opencharly/spec#227). It is reached over SSH, so it reuses the "ssh" venue — the
+	// venue enum has no firecracker member, and no second contract change is needed to say
+	// what "ssh" already says.
+	//
+	// NO ExclusiveVenue, and that is the load-bearing part: IsVmVenue is ssh AND
+	// exclusive_venue, so declaring an exclusive venue would make the kernel MISROUTE this
+	// deploy into `charly vm build`/`charly vm create` — the bug fe624e5 fixed for kubevirt,
+	// which is why kubevirt's row carries the ssh venue without it. A microVM holds no
+	// host-global libvirt domain and no arbiter lease, so it must not claim one.
+	//
+	// ImageBacked: the box IS an OCI image carrying the rootfs + kernel artefacts (WI-2/WI-3).
+	// BedTarget: a disposable bed boots a real microVM (WI-13). SupportsEphemeral: a microVM is
+	// create/destroy-able per run, which is what the ephemeral TTL seam expects.
+	"firecracker": {Venue: "ssh", ImageBacked: true, BedTarget: true, SupportsEphemeral: true},
 }
 
 // NewProvider returns the substrate kind provider for in-proc registration or out-of-proc serving.
@@ -102,7 +117,7 @@ func CliMain(args []string) int {
 	return 0
 }
 
-// NewMeta advertises the 7 STRUCTURAL substrate kind capabilities (Class "kind",
+// NewMeta advertises the 8 STRUCTURAL substrate kind capabilities (Class "kind",
 // Structural:true) + this plugin's OWN self-contained CUE schema (schema/substrate.cue,
 // served via sdk.NewMeta → BuildCapabilities): there is NO schema-less plugin. Each kind
 // declares InputDef:"" — the rich substrate value is validated HOST-SIDE against the
