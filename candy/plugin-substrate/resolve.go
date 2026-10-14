@@ -112,6 +112,21 @@ func resolveSubstrateTemplate(in spec.SubstrateTemplateResolveRequest) ([]byte, 
 			Raw:       in.Vm.Vm,
 		}}
 		return json.Marshal(reply)
+	case in.Firecracker != nil:
+		var fc spec.Firecracker
+		if err := json.Unmarshal(in.Firecracker.Firecracker, &fc); err != nil {
+			return nil, fmt.Errorf("firecracker resolve: decode: %w", err)
+		}
+		// The envelope carries the RAW body and nothing more: a `kind: firecracker` template
+		// describes the HOST's capabilities (the VMM, the kernel, the network, containerd, the
+		// runner pools) and the microVM shape — it names no hostname, because the HOST is the
+		// deploy's own venue (its `host:`, exactly as local/vm deploys carry theirs). Whoever
+		// resolves the venue therefore fills ResolvedFirecracker.Host/SSHUser; this leg must not
+		// invent one from a field the template does not have.
+		reply := spec.FirecrackerResolveReply{Resolved: &spec.ResolvedFirecracker{
+			Raw: in.Firecracker.Firecracker,
+		}}
+		return json.Marshal(reply)
 	default:
 		return nil, fmt.Errorf("substrate template resolve: no arm set")
 	}

@@ -119,7 +119,8 @@ func newFlatCollector(ctx context.Context, rt *kit.ResolvedRuntime) *flatCollect
 	return c
 }
 
-// collectFlat collects status across every deployment substrate (pod/vm/kubernetes/local/android/kubevirt/kindcluster) — ALL
+// collectFlat collects status across every deployment substrate
+// (pod/vm/kubernetes/local/android/kubevirt/kindcluster/firecracker) — ALL
 // words fan out via a DIRECT in-package call to statusCollect (status_collect.go, same package)
 // — no registry, no wire round-trip for this leg (the fan-out dissolved the former "registry
 // blocker": these words are the SAME substrateWords this provider already owns). Applies the
@@ -136,6 +137,7 @@ func (c *flatCollector) collectFlat(ctx context.Context, includeAll bool) ([]spe
 	localRows := c.collectWord(ctx, "local", opts)
 	kubernetesRows := c.collectWord(ctx, "kubernetes", opts)
 	kindclusterRows := c.collectWord(ctx, "kindcluster", opts)
+	firecrackerRows := c.collectWord(ctx, "firecracker", opts)
 	androidRows := c.collectWord(ctx, "android", opts)
 	vmRows := c.collectWord(ctx, "vm", opts)
 	for i := range vmRows {
@@ -150,10 +152,11 @@ func (c *flatCollector) collectFlat(ctx context.Context, includeAll bool) ([]spe
 		c.enrichOne(&podRows[i], c.rt.RunEngine)
 	}
 
-	results := make([]spec.DeploymentStatus, 0, len(localRows)+len(kubernetesRows)+len(kindclusterRows)+len(androidRows)+len(vmRows)+len(kubevirtRows)+len(podRows))
+	results := make([]spec.DeploymentStatus, 0, len(localRows)+len(kubernetesRows)+len(kindclusterRows)+len(firecrackerRows)+len(androidRows)+len(vmRows)+len(kubevirtRows)+len(podRows))
 	results = append(results, localRows...)
 	results = append(results, kubernetesRows...)
 	results = append(results, kindclusterRows...)
+	results = append(results, firecrackerRows...)
 	results = append(results, androidRows...)
 	results = append(results, vmRows...)
 	results = append(results, kubevirtRows...)
