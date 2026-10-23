@@ -57,8 +57,9 @@ var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android", "ku
 // consults for each substrate's deploy behaviour. kit.StampDescent stamps these onto every
 // node's spec.DescentDescriptor (resolved by the host's registry-backed deployTraitsFor), so
 // every consult site reads the behaviour off node.Descent BY TRAIT — never by switching on the
-// kind word. Canonical table (Appendix B): pod=container+image_backed+image_context;
-// vm=ssh+machine_venue+exclusive_venue; kubevirt=ssh+image_backed (a cluster-scheduled VM: the
+// kind word. Canonical table (Appendix B): pod=container+image_backed+image_context
+// +selectors[engine,rootful]; vm=ssh+machine_venue+exclusive_venue+selectors[backend];
+// kubevirt=ssh+image_backed (a cluster-scheduled VM: the
 // ssh venue WITHOUT exclusive_venue, since it holds no host-resource lease — the host arbiter is
 // skipped); local=shell+machine_venue; kubernetes=shell+image_context+
 // leaf_only; android=parent; kindcluster=external-in-place (venue none);
@@ -67,8 +68,8 @@ var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android", "ku
 // opts AND need the Q1 resource-arbiter claim bracketed — vm manages its own venue lifecycle +
 // resource claim via `charly vm start`/`stop`, so it leaves this false.
 var substrateTraits = map[string]*spec.DeployTraits{
-	"pod":        {Venue: "container", ImageBacked: true, ImageContext: true, BracketedLifecycle: true, BedTarget: true},
-	"vm":         {Venue: "ssh", MachineVenue: true, ExclusiveVenue: true, BedTarget: true, SupportsEphemeral: true, SupportsFromSnapshot: true},
+	"pod":        {Venue: "container", ImageBacked: true, ImageContext: true, BracketedLifecycle: true, BedTarget: true, Selectors: []string{selectorEngine, selectorRootful}},
+	"vm":         {Venue: "ssh", MachineVenue: true, ExclusiveVenue: true, BedTarget: true, SupportsEphemeral: true, SupportsFromSnapshot: true, Selectors: []string{selectorBackend}},
 	"kubevirt":   {Venue: "kubevirt", ImageBacked: true, BedTarget: true, SupportsEphemeral: true, SupportsFromSnapshot: true},
 	"local":      {Venue: "shell", MachineVenue: true, BedTarget: true},
 	"kubernetes": {Venue: "shell", ImageContext: true, LeafOnly: true},
