@@ -17,10 +17,13 @@ Canonical files:
 - `candy/plugin-substrate/status_*.go` — the status collectors
   (`OpStatusCollect`).
 - `candy/plugin-substrate/schema/substrate.cue` — the served declaration surface.
-- `candy/plugin-substrate/schema/pod.cue` — the `kind: pod` entity body this plugin
-  OWNS (`#Pod` / `#PodValue`), and the one `import` of the contract module. It sorts
+- `candy/plugin-substrate/schema/local.cue` — the `kind: local` entity body this plugin
+  OWNS (`#Local` / `#LocalValue`), and the one `import` of the contract module. It sorts
   FIRST in the schema dir on purpose: `schemaconcat.ConcatSchema` concatenates a dir's
   files in sorted order and a CUE `import` must precede every declaration.
+- `candy/plugin-substrate/schema/pod.cue` — the `kind: pod` entity body this plugin
+  OWNS (`#Pod` / `#PodValue`). It sorts after `local.cue`, so the contract import lives
+  there and not here.
 - `charly.yml` — the project manifest + the `check-substrate` bed.
 - `.github/workflows/tag-on-merge.yml` — CalVer tag + `CHANGELOG/` on merge.
 - `README.md` — user overview only; never agent guidance.

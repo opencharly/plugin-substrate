@@ -134,3 +134,38 @@ func TestResolvePod_Projection(t *testing.T) {
 		t.Errorf("Raw not preserved through resolve")
 	}
 }
+
+// TestResolveLocal_Projection pins the OpResolve leg's local arm AFTER the body moved
+// (opencharly/spec#304 unit 4): the authored bytes decode STRAIGHT into the contract's
+// #ResolvedLocal envelope, with no plugin-side Go type of its own and Raw preserved. The
+// `bogus` key is deliberately present — OpResolve is a projection, not the validator; the
+// closedness of #Local is the host gate's job (schema_serve_test.go proves that half).
+func TestResolveLocal_Projection(t *testing.T) {
+	body := []byte(`{"candy":["shell"],"description":"a host","plan":[{"run":"true"}],"bogus":1}`)
+	out, err := resolveSubstrateTemplate(spec.SubstrateTemplateResolveRequest{
+		Local: &spec.LocalResolveInput{Local: body},
+	})
+	if err != nil {
+		t.Fatalf("resolveSubstrateTemplate(local): %v", err)
+	}
+	var reply spec.LocalResolveReply
+	if err := json.Unmarshal(out, &reply); err != nil {
+		t.Fatal(err)
+	}
+	r := reply.Resolved
+	if r == nil {
+		t.Fatal("local resolve produced no envelope")
+	}
+	if len(r.Candy) != 1 || r.Candy[0] != "shell" {
+		t.Errorf("Candy = %v, want [shell]", r.Candy)
+	}
+	if r.Description != "a host" {
+		t.Errorf("Description = %q, want %q", r.Description, "a host")
+	}
+	if len(r.Plan) != 1 {
+		t.Errorf("Plan = %+v, want the one authored step", r.Plan)
+	}
+	if string(r.Raw) != string(body) {
+		t.Errorf("Raw not preserved through resolve")
+	}
+}
