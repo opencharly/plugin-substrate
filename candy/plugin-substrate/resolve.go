@@ -22,18 +22,17 @@ import (
 func resolveSubstrateTemplate(in spec.SubstrateTemplateResolveRequest) ([]byte, error) {
 	switch {
 	case in.Local != nil:
-		var l spec.Local
-		if err := json.Unmarshal(in.Local.Local, &l); err != nil {
+		// The local body's authored fields ARE the #ResolvedLocal envelope's fields —
+		// candy / install_opts / env / description / plan — so the projection decodes
+		// STRAIGHT into the contract's envelope and copies nothing by hand. The former
+		// `var l spec.Local` plus field-by-field copy existed only because the authored
+		// body had a Go type of its own; opencharly/spec#304 unit 4 moved that body into
+		// this plugin's CUE module (schema/local.cue), and the contract's own note on
+		// #ResolvedLocal already said the envelope is the kernel's read surface.
+		reply := spec.LocalResolveReply{Resolved: &spec.ResolvedLocal{Raw: in.Local.Local}}
+		if err := json.Unmarshal(in.Local.Local, reply.Resolved); err != nil {
 			return nil, fmt.Errorf("local resolve: decode: %w", err)
 		}
-		reply := spec.LocalResolveReply{Resolved: &spec.ResolvedLocal{
-			Candy:       l.Candy,
-			InstallOpts: l.InstallOpts,
-			Env:         l.Env,
-			Description: l.Description,
-			Plan:        l.Plan,
-			Raw:         in.Local.Local,
-		}}
 		return json.Marshal(reply)
 	case in.Pod != nil:
 		// The pod body's authored fields ARE the #ResolvedPod envelope's fields — box /

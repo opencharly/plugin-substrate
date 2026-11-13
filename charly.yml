@@ -8,6 +8,17 @@
 # Declaring discover: is the whole fix: the candy is scanned, the CUE schema gate
 # applies, and the STOCK `charly box validate` step starts working with no workflow
 # change. This file also declares the R10 witness bed (below).
+# The `vm:` substrate. This project hosts the check-substrate bed, whose deploy IS a
+# `vm:` node (`from: eval-vm`), so the project must compose plugin-deploy-vm or
+# `deploy add` refuses with "the vm deploy substrate is not available in this project"
+# before any VM is touched. The externalized deploy substrates are per-project candies,
+# and this repo composed none: measured 2026-11-13, the bed FAILED at deploy-add
+# (opencharly/charly#1083's exact symptom, and opencharly/spec#304 unit 4's R10 gate).
+# The same composition is recorded in opencharly/charly's own manifest, which is what
+# makes that project's vm-hosting beds runnable. A NESTED `local:` member needs no
+# import: plugin-fleet routes `local` to the host's own shell.
+import:
+    - vmdeploy: '@github.com/opencharly/plugin-deploy-vm:v2026.314.0712'
 discover:
     - path: candy
       recursive: true

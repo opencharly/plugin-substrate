@@ -2,12 +2,13 @@
 // plugin's served declaration surface (there is no schema-less plugin: every plugin ships a
 // non-empty schema over Describe).
 //
-// ONE CUE MODULE PACKAGE, TWO FILES. This file carries the declaration surface and
-// references no base def; `pod.cue` carries the `kind: pod` ENTITY body and imports the
-// contract for the shared defs it references (schema.#PodSidecar / #DeployValue / #Step / …).
+// ONE CUE MODULE PACKAGE, THREE FILES. This file carries the declaration surface and
+// references no base def; `local.cue` carries the `kind: local` ENTITY body and the module's
+// single contract import, and `pod.cue` carries the `kind: pod` ENTITY body and references
+// the contract for the shared defs it uses (schema.#PodSidecar / #DeployValue / #Step / …).
 // The module composes as ONE package — `schemaconcat.ConcatSchema` concatenates a schema
 // dir's files in sorted order and strips only the package clause, so the single `import`
-// lives in the file that sorts FIRST (`pod.cue` before `substrate.cue`). It is composed by
+// lives in the file that sorts FIRST (`local.cue`, before `pod.cue` and `substrate.cue`). It is composed by
 // the SAME code on both sides of the wire — spec/schemacompose on the serve side
 // (sdk.BuildCapabilitiesWithRequires → ServedSchema) and on the host side
 // (registerPluginUnitSchema → ServedText, which unifies the unit onto the base); a unit that
