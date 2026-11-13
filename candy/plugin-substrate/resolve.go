@@ -1,8 +1,16 @@
 package substratekind
 
 // resolve.go — candy/plugin-substrate's OpResolve leg (the substrate-template
-// de-type, Cutover I): project an authored local:/android: TEMPLATE into a Resolved*
-// envelope the kernel consumes without importing the concrete spec.Local / spec.Android.
+// de-type, Cutover I): project an authored TEMPLATE of ANY substrate word
+// (local/pod/kubernetes/kindcluster/kubevirt/android/vm/firecracker — the
+// substrateWords list) into a Resolved* envelope the kernel consumes without
+// importing the concrete spec.Local / spec.Android / …
+//
+// The envelope types are the CONTRACT's (#ResolvedPod et al., spec/schema/
+// substrate_template.cue) because the kernel reads them; only the AUTHORED body
+// type moved into a plugin's own CUE module (the pod body today, schema/pod.cue),
+// and an arm whose body moved decodes the authored bytes straight into the
+// contract envelope instead of through a plugin-owned Go type.
 
 import (
 	"encoding/json"
@@ -28,18 +36,17 @@ func resolveSubstrateTemplate(in spec.SubstrateTemplateResolveRequest) ([]byte, 
 		}}
 		return json.Marshal(reply)
 	case in.Pod != nil:
-		var p spec.Pod
-		if err := json.Unmarshal(in.Pod.Pod, &p); err != nil {
+		// The pod body's authored fields ARE the #ResolvedPod envelope's fields — box /
+		// sidecar / secret / env_default / plan — so the projection decodes STRAIGHT into
+		// the contract's envelope and copies nothing by hand. The former
+		// `var p spec.Pod` plus field-by-field copy existed only because the authored body
+		// had a Go type of its own; opencharly/spec#304 unit 3 moved that body into this
+		// plugin's CUE module (schema/pod.cue), and the contract's own note on #ResolvedPod
+		// already said the kernel "never" reads a spec.Pod.
+		reply := spec.PodResolveReply{Resolved: &spec.ResolvedPod{Raw: in.Pod.Pod}}
+		if err := json.Unmarshal(in.Pod.Pod, reply.Resolved); err != nil {
 			return nil, fmt.Errorf("pod resolve: decode: %w", err)
 		}
-		reply := spec.PodResolveReply{Resolved: &spec.ResolvedPod{
-			Box:         p.Box,
-			Sidecar:     p.Sidecar,
-			Secret:      p.Secret,
-			EnvDefaults: p.EnvDefaults,
-			Plan:        p.Plan,
-			Raw:         in.Pod.Pod,
-		}}
 		return json.Marshal(reply)
 	case in.Kubernetes != nil:
 		var k spec.Kubernetes

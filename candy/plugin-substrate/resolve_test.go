@@ -92,3 +92,45 @@ func TestResolveKubeVirt_FieldCopy(t *testing.T) {
 		t.Errorf("Raw not preserved through resolve")
 	}
 }
+
+// TestResolvePod_Projection covers the pod substrate-value de-type: OpResolve projects an
+// authored `pod:` template body straight into the CONTRACT's #ResolvedPod envelope
+// (box/sidecar/secret/env_default/plan + Raw preserved).
+//
+// The pod body has no plugin-owned Go type any more (opencharly/spec#304 unit 3 moved
+// #Pod into this plugin's CUE module and deleted spec.Pod), so this arm decodes the
+// authored bytes into the envelope the KERNEL reads. The test pins that projection at its
+// actual boundary: a field the envelope does not carry is dropped exactly as the former
+// `spec.Pod` intermediate dropped it, and Raw keeps the authored bytes verbatim.
+func TestResolvePod_Projection(t *testing.T) {
+	body := []byte(`{"box":"fedora","sidecar":[{"sidecar":{"db":{"image":"redis"}}}],"env_default":{"A":"1"},"plan":[{"run":"true"}],"bogus":1}`)
+	out, err := resolveSubstrateTemplate(spec.SubstrateTemplateResolveRequest{
+		Pod: &spec.PodResolveInput{Pod: body},
+	})
+	if err != nil {
+		t.Fatalf("resolveSubstrateTemplate(pod): %v", err)
+	}
+	var reply spec.PodResolveReply
+	if err := json.Unmarshal(out, &reply); err != nil {
+		t.Fatal(err)
+	}
+	r := reply.Resolved
+	if r == nil {
+		t.Fatal("pod resolve produced no envelope")
+	}
+	if r.Box != "fedora" {
+		t.Errorf("Box = %q, want %q", r.Box, "fedora")
+	}
+	if len(r.Sidecar) != 1 || len(r.Sidecar[0].Sidecar) != 1 {
+		t.Errorf("Sidecar = %+v, want the one authored wrapper", r.Sidecar)
+	}
+	if got := r.EnvDefaults["A"]; got != "1" {
+		t.Errorf("EnvDefaults = %v, want A=1", r.EnvDefaults)
+	}
+	if len(r.Plan) != 1 {
+		t.Errorf("Plan = %+v, want the one authored step", r.Plan)
+	}
+	if string(r.Raw) != string(body) {
+		t.Errorf("Raw not preserved through resolve")
+	}
+}
