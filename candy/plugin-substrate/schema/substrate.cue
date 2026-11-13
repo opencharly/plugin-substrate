@@ -1,19 +1,26 @@
-// plugin-substrate's OWN self-contained CUE schema — the SINGLE SOURCE for this plugin's
-// served declaration surface (there is no schema-less plugin: every plugin ships a
+// plugin-substrate's OWN CUE schema (with schema/pod.cue) — the SINGLE SOURCE for this
+// plugin's served declaration surface (there is no schema-less plugin: every plugin ships a
 // non-empty schema over Describe).
 //
-// SELF-CONTAINED and PACKAGE-LESS: it references no base def and carries no package
-// clause, so it compiles STANDALONE — the property the SDK's serve-side compile needs
-// and the property that lets the host splice `base ++ plugin` at the load gate
-// (registerPluginUnitSchema); a self-contained schema that will not splice is a LOUD
-// load failure.
+// ONE CUE MODULE PACKAGE, TWO FILES. This file carries the declaration surface and
+// references no base def; `pod.cue` carries the `kind: pod` ENTITY body and imports the
+// contract for the shared defs it references (schema.#PodSidecar / #DeployValue / #Step / …).
+// The module composes as ONE package — `schemaconcat.ConcatSchema` concatenates a schema
+// dir's files in sorted order and strips only the package clause, so the single `import`
+// lives in the file that sorts FIRST (`pod.cue` before `substrate.cue`). It is composed by
+// the SAME code on both sides of the wire — spec/schemacompose on the serve side
+// (sdk.BuildCapabilitiesWithRequires → ServedSchema) and on the host side
+// (registerPluginUnitSchema → ServedText, which unifies the unit onto the base); a unit that
+// will not compose alone or will not splice is a LOUD load failure, never a silent skip.
 //
 // NO GO CONSUMER: the plugin declares no typed `plugin_input` (its authored input is
 // its pass-through CLI grammar), so this schema generates NO `params` package and has
 // NO `cue exp gengotypes` artifact — it is the SERVED documentation/config surface,
-// not a code-generation source.
+// not a code-generation source. The pod body's one consumer (resolve.go) decodes the
+// authored bytes straight into the contract's `#ResolvedPod` envelope, so it needs no
+// generated type either.
 //
-// It DOCUMENTS the substrate provider's kind/command/verb words and the deploy traits they carry. The rich substrate VALUES are validated HOST-SIDE against the kept `#<Kind>Value` defs (each capability declares `InputDef:""`), not decoded here.
+// It DOCUMENTS the substrate provider's kind/command/verb words and the deploy traits they carry. The rich substrate VALUES are validated HOST-SIDE against the kept `#<Kind>Value` defs. Each capability declares `InputDef:""` — the base still declares its def — EXCEPT `pod`, whose body lives here and whose capability declares `InputDef:"#PodValue"`.
 #SubstratePlugin: {
 	// The structural deploy kind words this provider serves.
 	kinds: [...string]

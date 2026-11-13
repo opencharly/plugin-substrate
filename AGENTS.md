@@ -16,7 +16,11 @@ Canonical files:
 - `candy/plugin-substrate/resolve.go` — the structural template/deploy decode.
 - `candy/plugin-substrate/status_*.go` — the status collectors
   (`OpStatusCollect`).
-- `candy/plugin-substrate/schema/substrate.cue` — the self-contained schema.
+- `candy/plugin-substrate/schema/substrate.cue` — the served declaration surface.
+- `candy/plugin-substrate/schema/pod.cue` — the `kind: pod` entity body this plugin
+  OWNS (`#Pod` / `#PodValue`), and the one `import` of the contract module. It sorts
+  FIRST in the schema dir on purpose: `schemaconcat.ConcatSchema` concatenates a dir's
+  files in sorted order and a CUE `import` must precede every declaration.
 - `charly.yml` — the project manifest + the `check-substrate` bed.
 - `.github/workflows/tag-on-merge.yml` — CalVer tag + `CHANGELOG/` on merge.
 - `README.md` — user overview only; never agent guidance.
@@ -48,9 +52,8 @@ Canonical files:
 
 ## Modify this repo
 
-- Edit the `plugin-substrate:` candy entity, the Go source, and
-  `schema/substrate.cue` **together** — the schema is the single source for the
-  generated types.
+- Edit the `plugin-substrate:` candy entity, the Go source, and the `schema/` dir
+  **together** — the schema is the single source for the served declarations.
 - The host pre-decodes the canonical node and this plugin ECHOES it; keep the
   decode source of truth in the host loader, not here.
 - The plugin is **compiled-in** (core deploy primitives); it also serves

@@ -13,7 +13,7 @@
 // RETURNS it: a deploy echo (spec.Deploy) the host folds into uf.Deploy, or a template echo
 // (the per-substrate typed value's JSON) the host folds into uf.Pod/uf.VM/… — the C2-substrate
 // TEMPLATE fold arm that extends F5's deploy-only fold. RDD proved a canonical spec.Deploy /
-// spec.Vm / spec.Pod / … round-trips through JSON byte-faithfully, so this thread-echo-fold is
+// spec.Vm / … round-trips through JSON byte-faithfully, so this thread-echo-fold is
 // BYTE-EQUIVALENT to the former in-proc standaloneKind decode (buildDeployNodeInto /
 // buildStandaloneResource).
 //
@@ -102,6 +102,24 @@ var substrateTraits = map[string]*spec.DeployTraits{
 	"firecracker": {Venue: "ssh", ImageBacked: true, BedTarget: true, SupportsEphemeral: true},
 }
 
+// substrateKindInputDefs is the per-word DECLARED `#<Word>Value` gate def — the contract
+// opencharly/charly#1122 established and opencharly/spec#304 carries as its chain rule: a
+// kind whose authored body lives in its OWN plugin's CUE module declares
+// `InputDef: "#<Word>Value"` on its `kind` capability, so the host resolves the gate def
+// from the DECLARATION (kindValueDefPath) and reads it out of the COMPOSED unit instead of
+// the base's spec.KindValueDefs compatibility fallback. That declaration is part of the
+// MOVE, never an optional extra: without it the host keeps answering from the base, so the
+// def could not be deleted there.
+//
+// A word ABSENT from this table declares nothing, because its body still lives in the base
+// and the fallback is still its correct answer. "pod" is the first moved word
+// (opencharly/spec#304 unit 3, body in schema/pod.cue); each sibling moves the same way, one
+// unit at a time, adding exactly its own row here. The table is keyed by the SAME word list
+// as substrateTraits, so a word cannot declare a def without also declaring its traits.
+var substrateKindInputDefs = map[string]string{
+	"pod": "#PodValue",
+}
+
 // NewProvider returns the substrate kind provider for in-proc registration or out-of-proc serving.
 func NewProvider() pb.ProviderServer { return &provider{} }
 
@@ -119,12 +137,18 @@ func CliMain(args []string) int {
 }
 
 // NewMeta advertises the 8 STRUCTURAL substrate kind capabilities (Class "kind",
-// Structural:true) + this plugin's OWN self-contained CUE schema (schema/substrate.cue,
-// served via sdk.NewMeta → BuildCapabilities): there is NO schema-less plugin. Each kind
-// declares InputDef:"" — the rich substrate value is validated HOST-SIDE against the
-// KEPT #<Kind>Value core def (runPluginKind → validateStandaloneKindValueCUE), NOT by this
-// served schema; #SubstratePlugin documents the provider's declaration surface and satisfies
-// the uniform non-empty-schema contract. ONLY "vm" additionally declares
+// Structural:true) + this plugin's OWN CUE schema (schema/*.cue, served via sdk.NewMeta →
+// BuildCapabilities): there is NO schema-less plugin. Each kind declares InputDef:"" — the
+// rich substrate value is validated HOST-SIDE against the #<Kind>Value def (runPluginKind →
+// foldSubstrateKind → validateKindValueCUE), NOT by this served schema — EXCEPT "pod", whose
+// body this plugin now OWNS (opencharly/spec#304 unit 3): its capability declares
+// InputDef:"#PodValue", so the host resolves the gate def from the DECLARATION and reads it
+// from the COMPOSED unit (schema/pod.cue) instead of the base's spec.KindValueDefs
+// compatibility fallback. That declaration is what lets the base drop the def; the ROUTING
+// is unchanged either way, because the pod word still declares DeployTraits and therefore
+// still folds through foldSubstrateKind. #SubstratePlugin documents the provider's
+// declaration surface and satisfies the uniform non-empty-schema contract. ONLY "vm"
+// additionally declares
 // Validates:true (F7/C8) — its deep OpValidate check (validate_vm.go) closes the one proven
 // gap the host's closedness-only value gate cannot express (PCI-hostdev field concreteness);
 // pod/kubernetes/local/android declare no deep check and pay no extra OpValidate round-trip. Also
@@ -135,7 +159,7 @@ func CliMain(args []string) int {
 func NewMeta() pb.PluginMetaServer {
 	caps := make([]sdk.ProvidedCapability, 0, len(substrateWords)+2)
 	for _, w := range substrateWords {
-		caps = append(caps, sdk.ProvidedCapability{Class: "kind", Word: w, Structural: true, Validates: w == "vm" || w == "kubevirt", DeployTraits: substrateTraits[w]})
+		caps = append(caps, sdk.ProvidedCapability{Class: "kind", Word: w, InputDef: substrateKindInputDefs[w], Structural: true, Validates: w == "vm" || w == "kubevirt", DeployTraits: substrateTraits[w]})
 	}
 	caps = append(caps, sdk.ProvidedCapability{Class: "command", Word: "reap-orphans"})
 	caps = append(caps, sdk.ProvidedCapability{Class: "verb", Word: "status-fanout"})
