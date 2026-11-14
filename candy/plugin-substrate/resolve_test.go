@@ -253,3 +253,28 @@ func TestResolveKubeVirt_Projection(t *testing.T) {
 		t.Errorf("Raw not preserved through resolve")
 	}
 }
+
+// TestResolveFirecracker_Projection exercises the arm opencharly/spec#304 unit 7 rewrote. The
+// authored body lives in this plugin's CUE module now, and the envelope carries the RAW bytes
+// alone (a firecracker template describes the HOST; the venue fills Host/SSHUser), so the arm is
+// the pure "wrap the bytes" path — which is exactly what this test pins: the reply's Resolved is
+// non-nil and carries the authored bytes verbatim, with no decode that could drop a field.
+func TestResolveFirecracker_Projection(t *testing.T) {
+	body := []byte(`{"description":"a microvm host","machine":{"vcpu_count":2},"kernel":{"path":"/boot/vmlinux"},"pool":[{"name":"ci"}]}`)
+	out, err := resolveSubstrateTemplate(spec.SubstrateTemplateResolveRequest{
+		Firecracker: &spec.FirecrackerResolveInput{Firecracker: body},
+	})
+	if err != nil {
+		t.Fatalf("resolveSubstrateTemplate(firecracker): %v", err)
+	}
+	var reply spec.FirecrackerResolveReply
+	if err := json.Unmarshal(out, &reply); err != nil {
+		t.Fatal(err)
+	}
+	if reply.Resolved == nil {
+		t.Fatal("firecracker resolve produced no envelope")
+	}
+	if string(reply.Resolved.Raw) != string(body) {
+		t.Errorf("the envelope did not carry the authored bytes verbatim: %q", reply.Resolved.Raw)
+	}
+}

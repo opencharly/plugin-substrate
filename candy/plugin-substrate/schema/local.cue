@@ -24,10 +24,9 @@
 // FILE ORDER IS LOAD-BEARING. spec/schemaconcat.ConcatSchema sorts a schema dir's files and
 // concatenates them, stripping only the package clause, and a CUE `import` must precede
 // every declaration. So the module's single import lives in the file that sorts FIRST:
-// `kindcluster.cue`, which sorts before this file and before `pod.cue` and `substrate.cue`,
-// and CARRIES it since the `kind: kindcluster` body landed (opencharly/spec#304 unit 5).
-// Renaming any file without re-checking the order makes the served schema uncompilable at
-// load time.
+// `firecracker.cue`, which sorts before this file and every other, and CARRIES it since the
+// `kind: firecracker` body landed (opencharly/spec#304 unit 7). Renaming any file without
+// re-checking the order makes the served schema uncompilable at load time.
 
 // #Local validates ONE entry of the `local:` map (a target:local candy stack). CLOSED — the
 // Go loader decodes with KnownFields(true), so an unknown key is an error. Shared defs

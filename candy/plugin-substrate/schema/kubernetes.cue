@@ -11,7 +11,7 @@
 // body's own enum, not a shared vocabulary). What STAYS in the contract — `schema.#Step`, `#Deploy`,
 // `#DeployValue`, `#EngineName`, `#KubernetesDeploy` — is cited as `schema.#…`.
 //
-// THE IMPORT LIVES IN `kindcluster.cue`: that file sorts FIRST in this directory, and
+// THE IMPORT LIVES IN `firecracker.cue`: that file sorts FIRST in this directory, and
 // spec/schemaconcat.ConcatSchema concatenates a module's files in sorted order with only the
 // package clause stripped, so a CUE `import` must precede every declaration of the module.
 
