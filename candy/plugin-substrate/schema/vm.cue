@@ -5,8 +5,12 @@
 // reads it out of the schema composed from the base and every served plugin unit.
 // opencharly/spec#304 unit 8 moved it here.
 //
-// WHAT CAME WITH IT: seven defs — `#Vm` itself, `#VmBackend`, `#VmBackendName`, `#VmChecksum`,
-// `#VmInstaller`, `#VmKeyInjection` and `#VmCharlyInstall` — plus the `#VmValue` twin at the foot.
+// WHAT CAME WITH IT: `#Vm` alone, plus the `#VmValue` twin at the foot — nothing else. Six defs that
+// arrived with it in #42 (`#VmBackend`, `#VmBackendName`, `#VmChecksum`, `#VmInstaller`,
+// `#VmKeyInjection`, `#VmCharlyInstall`) turned out to be keepers: the contract's own keepers and
+// the `spec.VmBackends` generator cite them, so the contract keeps them and this file cites them as
+// `schema.#…`. The pin wave's D-PAT control is what made the duplication visible, and this leg
+// removed it.
 //
 // WHAT STAYED IN THE CONTRACT, and why the line falls here: the resolve ENVELOPE, `#ResolvedVm`,
 // type-cites `#VmSource`, `#VmNetwork`, `#VmSsh`, `#VmCloudInit`, `#VmKrun`, `#VmSnapshot` and
@@ -38,12 +42,12 @@
 	// referenceable by the uefi-secure cross-rule below.
 	firmware: *"bios" | or(_vmFirmwareWord)
 
-	backend:   #VmBackend
+	backend:   schema.#VmBackend
 	autostart: *false | true
 	// autostart:true requires an authoring backend word: the guard is `or(_backendWord)`, whose
 	// rows are `auto` and `libvirt`. `auto` resolves by detection at apply time, so `libvirt` is
 	// the explicit choice; a `krun` guest has no persistent daemon at all (and `qemu` is a
-	// PROVIDER word in `#VmBackendName`, not a row of this authoring table).
+	// PROVIDER word in `schema.#VmBackendName`, not a row of this authoring table).
 	if autostart {
 		backend: or(_backendWord)
 	}
@@ -100,85 +104,6 @@
 	snapshot?: [...schema.#VmSnapshot] @go(Snapshots)
 }
 
-// #VmBackend — the authored/persisted VM-backend selector: the provider words
-// plus "auto", which resolves by detection (today: libvirt, then qemu) and is
-// never a provider word. The word list lives HERE so the template (#Vm), the
-// persisted deploy state (#VmDeployState) and the VM-backend class all read ONE
-// source.
-#VmBackend: *"auto" | #VmBackendName
-
-// #VmBackendName — the CLOSED VM-backend PROVIDER vocabulary, with no
-// resolution selector. `charly task cue-gen` emits it as spec.VmBackends, so a
-// resolver validates `--backend` / `CHARLY_VM_BACKEND` / `vm.backend` against the
-// schema's own word list instead of carrying literals. `auto` is NOT a member:
-// it is a resolution selector, never a provider word.
-#VmBackendName: or(schema.#VmBackendNameWord)
-
-#VmChecksum: {
-	type?:  "sha256"
-	value?: string & =~"^[0-9a-fA-F]{64}$"
-}
-
-// #VmInstaller — the unattended-install ANSWERS for a `source.kind: iso` VM.
-//
-// Distro-AGNOSTIC on purpose: every field here is a question EVERY installer asks.
-// Distro-SPECIFIC extras go in `answer:` (typed-open — a distro's installer vocabulary
-// is that distro's business, not vm.cue's), reachable from a #DistroInstaller template
-// as {{index .Answers "key"}}. The FORMAT that renders these into files lives on the
-// distro (#DistroInstaller), exactly as `init:` renders `service:`: archinstall JSON,
-// kickstart, preseed, Subiquity autoinstall and AutoYaST are five real formats, each
-// keyed by distro and by nothing else.
-//
-// password ⊻ password_hash is enforced by the vm kind's OWN OpValidate, not by CUE —
-// the same reason validateSourceDistro lives there: the host's value gate is
-// closedness-only by design, and a disjunction over two optional strings cannot
-// express "exactly one present".
-#VmInstaller: {
-	username?:  string & =~"^[a-z_][a-z0-9_-]{0,31}$"
-	full_name?: string
-	email?:     string
-	// password is PLAINTEXT. The renderer crypt()s it before it reaches any template,
-	// so the plaintext exists only in memory and never lands on the answers volume.
-	password?:      string & !=""
-	password_hash?: string & =~"^\\$(1|5|6|y|2b)\\$"
-	// disk is the target block device the installer wipes. It is the guest's view
-	// (/dev/vda), not a host path.
-	disk?: string & =~"^/dev/[a-z0-9/]+$"
-	// encrypt requests full-disk encryption. NOTE: an encrypted unattended install is
-	// not fully unattended — someone still types the LUKS passphrase at first boot —
-	// and the passphrase is written in PLAINTEXT onto the answers volume, which makes
-	// that volume a secret. Source it from the secrets backend, never a committed
-	// literal.
-	encrypt?:  bool
-	keyboard?: string & !=""
-	timezone?: string & !=""
-	locale?:   string & !=""
-	hostname?: string & !=""
-	// ssh_authorized_key seeds the created account's ~/.ssh/authorized_keys. On a
-	// distro whose installer honours it this is what makes the guest reachable at all
-	// (a stock Omarchy install ships openssh with the service disabled and the port
-	// closed), so charly defaults it to the public half of the per-VM generated key.
-	ssh_authorized_key?: [...(string & !="")]
-	// defer_provisioning installs with NO personal details, leaving the first person
-	// to boot the machine to create their own user — the imaging-rig mode. Mutually
-	// exclusive with the credential fields; enforced in OpValidate.
-	defer_provisioning?: bool
-	// answer carries per-distro extras the common fields do not model (a Tailscale
-	// auth key, a proxy, a licence). Typed-open by design.
-	answer?: {[string]: string}
-}
-
-#VmKeyInjection: {
-	smbios?:     or(schema.#VmSmbiosWord) @go(SMBIOS)
-	cloud_init?: or(schema.#VmCloudInitWord) @go(CloudInit)
-}
-
-#VmCharlyInstall: {
-	// VmCharlyInstall has ONLY `strategy` (the vm-spec skill's url/checksum are
-	// STALE — the Go struct dropped them). auto: scp host binary post-boot;
-	// scp: explicit form; skip: user-managed.
-	strategy?: *"auto" | or(schema.#VmStrategyWord)
-}
 
 // #VmValue — the HOST-SIDE value gate def for the `vm` kind (the `#PodValue` analogue). @go(-):
 // the plugin keeps no typed Go body for it; the resolve envelope carries the raw bytes.
