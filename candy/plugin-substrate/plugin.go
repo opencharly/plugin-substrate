@@ -305,23 +305,15 @@ func substrateLoad(req *pb.InvokeRequest) (*pb.InvokeReply, error) {
 	if env.Standalone == nil {
 		return nil, fmt.Errorf("substrate kind %q: host threaded no pre-decoded node (op.Env.standalone missing)", req.GetReserved())
 	}
+	// The wire carries the canonical node as OPAQUE BYTES (D-SCH-7): echo the body verbatim
+	// and let the shape say which node the host decoded — the host folds it into
+	// uf.Pod/uf.VM/… by kind.
 	switch env.Standalone.Shape {
-	case "template":
-		if len(env.Standalone.Template) == 0 {
-			return nil, fmt.Errorf("substrate kind %q: template shape carries no template", req.GetReserved())
+	case "template", "deploy":
+		if len(env.Standalone.Body) == 0 {
+			return nil, fmt.Errorf("substrate kind %q: %s shape carries no body", req.GetReserved(), env.Standalone.Shape)
 		}
-		// Echo the host-pre-decoded typed template value verbatim (raw JSON) — the host folds
-		// it into uf.Pod/uf.VM/… by kind.
-		return &pb.InvokeReply{ResultJson: env.Standalone.Template}, nil
-	case "deploy":
-		if env.Standalone.Deploy == nil {
-			return nil, fmt.Errorf("substrate kind %q: deploy shape carries no deploy node", req.GetReserved())
-		}
-		out, err := json.Marshal(env.Standalone.Deploy)
-		if err != nil {
-			return nil, fmt.Errorf("substrate kind %q: marshal deploy: %w", req.GetReserved(), err)
-		}
-		return &pb.InvokeReply{ResultJson: out}, nil
+		return &pb.InvokeReply{ResultJson: env.Standalone.Body}, nil
 	default:
 		return nil, fmt.Errorf("substrate kind %q: unknown load shape %q (want deploy|template)", req.GetReserved(), env.Standalone.Shape)
 	}
