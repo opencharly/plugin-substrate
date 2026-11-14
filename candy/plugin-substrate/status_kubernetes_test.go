@@ -1,7 +1,6 @@
 package substratekind
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,11 +12,9 @@ import (
 // given kubeconfig context — the shape resolveSubstrateTemplate decodes.
 func kubernetesTemplateBody(t *testing.T, ctx string) spec.RawBody {
 	t.Helper()
-	body, err := json.Marshal(spec.Kubernetes{KubeconfigContext: ctx})
-	if err != nil {
-		t.Fatalf("marshal kubernetes template body: %v", err)
-	}
-	return body
+	// spec.Kubernetes is gone (opencharly/spec#304 unit 5): build the wire JSON the
+	// authored template marshals to; the collector treats it as opaque bytes.
+	return []byte(`{"kubeconfig_context":"` + ctx + `"}`)
 }
 
 func TestKubernetesDeployEntries(t *testing.T) {

@@ -39,14 +39,10 @@ func TestResolveVm_FieldCopy(t *testing.T) {
 // Raw). Without the resolve leg a `from:`-referenced kindcluster deploy cannot
 // resolve its cluster template.
 func TestResolveKindcluster_FieldCopy(t *testing.T) {
-	body, err := json.Marshal(spec.Kindcluster{
-		Box:               "",
-		Engine:            "podman",
-		KubeconfigContext: "kind-lab",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	// spec.Kindcluster was deleted with the kindcluster body (opencharly/spec#304 unit 5);
+	// the arm consumes OPAQUE bytes and projects them into the contract envelope, so the
+	// body the test feeds is the wire JSON the authored template marshals to.
+	body := []byte(`{"engine":"podman","kubeconfig_context":"kind-lab"}`)
 	out, err := resolveSubstrateTemplate(spec.SubstrateTemplateResolveRequest{
 		Kindcluster: &spec.KindclusterResolveInput{Kindcluster: body},
 	})
@@ -70,10 +66,9 @@ func TestResolveKindcluster_FieldCopy(t *testing.T) {
 // projects spec.KubeVirt → ResolvedKubeVirt (cluster/context/namespace + Raw). Without
 // this arm the kind:kubevirt template cannot be de-typed for the deploy consumer.
 func TestResolveKubeVirt_FieldCopy(t *testing.T) {
-	body, err := json.Marshal(spec.KubeVirt{Cluster: "prod", KubeContext: "ctx", Namespace: "vms"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	// spec.KubeVirt was deleted with the kubevirt body (opencharly/spec#304 unit 6); the arm
+	// consumes OPAQUE bytes, so the body is the wire JSON the authored template marshals to.
+	body := []byte(`{"cluster":"prod","kube_context":"ctx","namespace":"vms"}`)
 	out, err := resolveSubstrateTemplate(spec.SubstrateTemplateResolveRequest{
 		KubeVirt: &spec.KubeVirtResolveInput{KubeVirt: body},
 	})

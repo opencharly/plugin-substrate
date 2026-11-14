@@ -272,7 +272,13 @@ func TestSubstrateOpLoad_PlainImagelessPodStillRejected(t *testing.T) {
 // TestSubstrateOpLoad_TemplateEchoByteFaithful pins the template-shape arm: the host
 // pre-decoded typed template value is echoed VERBATIM (the host folds it into uf.Pod).
 func TestSubstrateOpLoad_TemplateEchoByteFaithful(t *testing.T) {
-	tmpl, err := json.Marshal(spec.Pod{Box: "sandbox-img", EnvDefaults: map[string]string{"PORT": "8080"}})
+	// spec.Pod was deleted with the pod body (opencharly/spec#304 unit 3), so the typed value
+	// is the LOCAL shape here: the property under test is that a typed template marshals to a
+	// body the host echoes byte-for-byte, and any struct with the wire's JSON tags proves it.
+	tmpl, err := json.Marshal(struct {
+		Box         string            `json:"box"`
+		EnvDefaults map[string]string `json:"env_defaults"`
+	}{Box: "sandbox-img", EnvDefaults: map[string]string{"PORT": "8080"}})
 	if err != nil {
 		t.Fatalf("marshal template: %v", err)
 	}
