@@ -11,10 +11,10 @@ import (
 // projects spec.Vm → ResolvedVm (field-copy + Raw). Without the resolve leg the kernel's
 // vm build/deploy consumers cannot read the de-typed, opaque vm template.
 func TestResolveVm_FieldCopy(t *testing.T) {
-	body, err := json.Marshal(spec.Vm{Backend: "libvirt", Cpus: 4, Ram: "8G", Firmware: "uefi"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	// spec.Vm is deleted with the vm body (opencharly/spec#304 unit 8): the arm consumes the
+	// authored bytes and projects them into the contract envelope, so the fixture is the wire
+	// JSON the body marshals to.
+	body := []byte(`{"backend":"libvirt","cpu":4,"ram":"8G","firmware":"uefi"}`)
 	out, err := resolveSubstrateTemplate(spec.SubstrateTemplateResolveRequest{
 		Vm: &spec.VmResolveInput{Vm: body},
 	})
