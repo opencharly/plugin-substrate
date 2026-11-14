@@ -22,6 +22,7 @@
 // spec/schemaconcat.ConcatSchema concatenates a module's files in sorted order, and `vm.cue`
 // sorts LAST.
 
+
 #Vm: {
 	source: schema.#VmSource @go(Source,type=VmSource)
 
@@ -39,7 +40,9 @@
 
 	backend:   #VmBackend
 	autostart: *false | true
-	// autostart:true requires the libvirt backend (qemu has no persistent daemon).
+	// autostart:true requires an explicit backend word: `auto` is a detection placeholder and a
+	// krun guest has no persistent daemon, so `libvirt` or `qemu` are the words that can honour it
+	// (the guard is the word list; which word actually persists is the backend's business).
 	if autostart {
 		backend: or(schema.#VmBackendWord)
 	}
@@ -96,40 +99,20 @@
 	snapshot?: [...schema.#VmSnapshot] @go(Snapshots)
 }
 
-// 7-way discriminated union on source.kind — cloud_image, bootc, clone, imported,
-// bootstrap, iso, container_disk; each arm pins kind, requires its
-// fields, forbids cross-branch fields via _|_, and is CLOSED (no trailing `...`)
-// so an unmodeled key is a typo.
-#VmBackend: *"auto" | #VmBackendName
-
-// #VmKrun — the krun backend's knobs. The BLOCK is optional, and meaningful
-// only when the resolved backend is krun. A krun guest's root is a containerd
-// snapshot, so the libvirt/qemu-only fields are rejected by the cross-rule on
-// #Vm below.
-//
-// The fields are required-WITH-DEFAULT, not optional: `krun: {}` must yield the
-// measured defaults (that is what makes them DATA rather than a consumer-side
-// literal). A consumer applies the same defaults when the whole block is absent.
-#VmBackendName: or(schema.#VmBackendNameWord)
-
 // #VmBackend — the authored/persisted VM-backend selector: the provider words
 // plus "auto", which resolves by detection (today: libvirt, then qemu) and is
 // never a provider word. The word list lives HERE so the template (#Vm), the
 // persisted deploy state (#VmDeployState) and the VM-backend class all read ONE
 // source.
-#VmCharlyInstall: {
-	// VmCharlyInstall has ONLY `strategy` (the vm-spec skill's url/checksum are
-	// STALE — the Go struct dropped them). auto: scp host binary post-boot;
-	// scp: explicit form; skip: user-managed.
-	strategy?: *"auto" | or(schema.#VmStrategyWord)
-}
+#VmBackend: *"auto" | #VmBackendName
 
-// ---------------------------------------------------------------------------
-// libvirt: LibvirtDomain (libvirt_yaml.go). CLOSED, every sub-type modeled as a
-// #Libvirt<Name> def. Genuine passthroughs stay typed (NOT blanket `{...}`):
-// snippets/xml_passthrough (raw XML) and every map[string]string Go field as
-// `{[string]: string}`.
-// ---------------------------------------------------------------------------
+// #VmBackendName — the CLOSED VM-backend PROVIDER vocabulary, with no
+// resolution selector. `charly task cue-gen` emits it as spec.VmBackends, so a
+// resolver validates `--backend` / `CHARLY_VM_BACKEND` / `vm.backend` against the
+// schema's own word list instead of carrying literals. `auto` is NOT a member:
+// it is a resolution selector, never a provider word.
+#VmBackendName: or(schema.#VmBackendNameWord)
+
 #VmChecksum: {
 	type?:  "sha256"
 	value?: string & =~"^[0-9a-fA-F]{64}$"
@@ -189,6 +172,12 @@
 	cloud_init?: or(schema.#VmCloudInitWord) @go(CloudInit)
 }
 
+#VmCharlyInstall: {
+	// VmCharlyInstall has ONLY `strategy` (the vm-spec skill's url/checksum are
+	// STALE — the Go struct dropped them). auto: scp host binary post-boot;
+	// scp: explicit form; skip: user-managed.
+	strategy?: *"auto" | or(schema.#VmStrategyWord)
+}
 
 // #VmValue — the HOST-SIDE value gate def for the `vm` kind (the `#PodValue` analogue). @go(-):
 // the plugin keeps no typed Go body for it; the resolve envelope carries the raw bytes.
