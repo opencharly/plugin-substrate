@@ -113,13 +113,16 @@ var substrateTraits = map[string]*spec.DeployTraits{
 //
 // A word ABSENT from this table declares nothing, because its body still lives in the base
 // and the fallback is still its correct answer. "pod" was the first moved word
-// (opencharly/spec#304 unit 3, body in schema/pod.cue) and "local" the second (unit 4, body
-// in schema/local.cue); each sibling moves the same way, one unit at a time, adding exactly
-// its own row here. The table is keyed by the SAME word list as substrateTraits, so a word
-// cannot declare a def without also declaring its traits.
+// (opencharly/spec#304 unit 3, body in schema/pod.cue), "local" the second (unit 4, body in
+// schema/local.cue) and "kubernetes" + "kindcluster" the third (unit 5, bodies in
+// schema/kubernetes.cue and schema/kindcluster.cue); each sibling moves the same way, one
+// unit at a time, adding exactly its own row here. The table is keyed by the SAME word list
+// as substrateTraits, so a word cannot declare a def without also declaring its traits.
 var substrateKindInputDefs = map[string]string{
-	"pod":   "#PodValue",
-	"local": "#LocalValue",
+	"pod":         "#PodValue",
+	"local":       "#LocalValue",
+	"kubernetes":  "#KubernetesValue",
+	"kindcluster": "#KindclusterValue",
 }
 
 // NewProvider returns the substrate kind provider for in-proc registration or out-of-proc serving.
