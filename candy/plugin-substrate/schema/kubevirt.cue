@@ -223,8 +223,9 @@
 // --- vocabulary tables (S3) --------------------------------------------------
 // Every closed set of words is a table keyed by word, `<x>Word` is derived from it,
 // and the enum an author meets is `or(<x>Word)` — so the table and the enum cannot
-// disagree and a new word is ONE row here. `@vocab` names the owner (§3.1): these
-// sets are compiled into THIS contract module, so the owner is `spec`.
+// disagree and a new word is ONE row here. `@vocab` names the owner (§3.1): these sets are
+// compiled into THIS plugin's module since opencharly/spec#304 unit 6 moved them with the body,
+// so the owner is `plugin-substrate`.
 //
 // Each table is named after its word when that name is unique in the schema, and
 // `<definition><Field>` when it is not; the comment above it names its site.
@@ -236,7 +237,7 @@ _runStrategy: {
 	"Manual": {}
 	"RerunOnFailure": {}
 	"Once": {}
-} @vocab(spec)
+} @vocab(plugin-substrate)
 _runStrategyWord: [for w, _ in _runStrategy {w}]
 // #KubeVirt.eviction_strategy
 _evictionStrategy: {
@@ -244,31 +245,31 @@ _evictionStrategy: {
 	"LiveMigrate": {}
 	"LiveMigrateIfPossible": {}
 	"External": {}
-} @vocab(spec)
+} @vocab(plugin-substrate)
 _evictionStrategyWord: [for w, _ in _evictionStrategy {w}]
 // #KubevirtSource.pull_policy
-_kubevirtSourcePullPolicy: {"Always": {}, "IfNotPresent": {}, "Never": {}} @vocab(spec)
+_kubevirtSourcePullPolicy: {"Always": {}, "IfNotPresent": {}, "Never": {}} @vocab(plugin-substrate)
 _kubevirtSourcePullPolicyWord: [for w, _ in _kubevirtSourcePullPolicy {w}]
 // #KubevirtSource.content_type
-_contentType: {kubevirt: {}, archive: {}} @vocab(spec)
+_contentType: {kubevirt: {}, archive: {}} @vocab(plugin-substrate)
 _contentTypeWord: [for w, _ in _contentType {w}]
 // #KubevirtInput.type
-_kubevirtInputType: {tablet: {}, mouse: {}, keyboard: {}} @vocab(spec)
+_kubevirtInputType: {tablet: {}, mouse: {}, keyboard: {}} @vocab(plugin-substrate)
 _kubevirtInputTypeWord: [for w, _ in _kubevirtInputType {w}]
 // #KubevirtInput.bus
-_bus: {virtio: {}, usb: {}, ps2: {}} @vocab(spec)
+_bus: {virtio: {}, usb: {}, ps2: {}} @vocab(plugin-substrate)
 _busWord: [for w, _ in _bus {w}]
 // #KubevirtWatchdog.model
-_kubevirtWatchdogModel: {i6300esb: {}, diag288: {}} @vocab(spec)
+_kubevirtWatchdogModel: {i6300esb: {}, diag288: {}} @vocab(plugin-substrate)
 _kubevirtWatchdogModelWord: [for w, _ in _kubevirtWatchdogModel {w}]
 // #KubevirtWatchdog.action
-_kubevirtWatchdogAction: {poweroff: {}, reset: {}, shutdown: {}} @vocab(spec)
+_kubevirtWatchdogAction: {poweroff: {}, reset: {}, shutdown: {}} @vocab(plugin-substrate)
 _kubevirtWatchdogActionWord: [for w, _ in _kubevirtWatchdogAction {w}]
 // #KubevirtNetwork.interface
-_interface: {masquerade: {}, bridge: {}, pod: {}} @vocab(spec)
+_interface: {masquerade: {}, bridge: {}, pod: {}} @vocab(plugin-substrate)
 _interfaceWord: [for w, _ in _interface {w}]
 // #KubevirtNetwork.model
-_kubevirtNetworkModel: {virtio: {}, e1000: {}, rtl8139: {}} @vocab(spec)
+_kubevirtNetworkModel: {virtio: {}, e1000: {}, rtl8139: {}} @vocab(plugin-substrate)
 _kubevirtNetworkModelWord: [for w, _ in _kubevirtNetworkModel {w}]
 
 // #KubevirtValue — the host-side value gate def for the `kubevirt` kind (the `#PodValue` /

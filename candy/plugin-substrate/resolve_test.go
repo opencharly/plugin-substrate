@@ -223,3 +223,33 @@ func TestResolveKindcluster_Projection(t *testing.T) {
 		t.Errorf("Raw not preserved through resolve")
 	}
 }
+
+// TestResolveKubeVirt_Projection pins the arm opencharly/spec#304 unit 6 rewrote. The authored
+// kubevirt body lives in this plugin's CUE module now, so the arm decodes the authored bytes
+// straight into the contract's resolved envelope instead of through a spec-authored Go type.
+// The FIELD is the point: the old code copied Cluster/KubeContext/Namespace by hand, and the
+// direct decode must arrive at the same three values (the envelope's json tags are the authored
+// keys) with Raw verbatim.
+func TestResolveKubeVirt_Projection(t *testing.T) {
+	body := []byte(`{"cluster":"prod-cluster","kube_context":"ctx-1","namespace":"vms","memory":"4Gi"}`)
+	out, err := resolveSubstrateTemplate(spec.SubstrateTemplateResolveRequest{
+		KubeVirt: &spec.KubeVirtResolveInput{KubeVirt: body},
+	})
+	if err != nil {
+		t.Fatalf("resolveSubstrateTemplate(kubevirt): %v", err)
+	}
+	var reply spec.KubeVirtResolveReply
+	if err := json.Unmarshal(out, &reply); err != nil {
+		t.Fatal(err)
+	}
+	r := reply.Resolved
+	if r == nil {
+		t.Fatal("kubevirt resolve produced no envelope")
+	}
+	if r.Cluster != "prod-cluster" || r.KubeContext != "ctx-1" || r.Namespace != "vms" {
+		t.Errorf("projection lost the authored fields: cluster=%q context=%q ns=%q", r.Cluster, r.KubeContext, r.Namespace)
+	}
+	if string(r.Raw) != string(body) {
+		t.Errorf("Raw not preserved through resolve")
+	}
+}
