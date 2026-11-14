@@ -164,7 +164,7 @@ func TestSubstrateOpLoad_ImagelessAgentProvisionedPodSurvives(t *testing.T) {
 	}
 
 	echo := opLoadEcho(t, "pod", &spec.StructuralKindLoadEnv{
-		Standalone: &spec.StandaloneLoad{Shape: "deploy", Deploy: &dep},
+		Standalone: &spec.StandaloneLoad{Shape: "deploy", Body: deployBody(t, &dep)},
 	})
 	var echoed spec.Deploy
 	if err := json.Unmarshal(echo, &echoed); err != nil {
@@ -242,7 +242,7 @@ check-agent-live:
 		t.Fatalf("decode canonical body: %v", err)
 	}
 	echo := opLoadEcho(t, "pod", &spec.StructuralKindLoadEnv{
-		Standalone: &spec.StandaloneLoad{Shape: "deploy", Deploy: &dep},
+		Standalone: &spec.StandaloneLoad{Shape: "deploy", Body: deployBody(t, &dep)},
 	})
 	remarshaled, merr := json.Marshal(dep)
 	if merr != nil {
@@ -283,9 +283,20 @@ func TestSubstrateOpLoad_TemplateEchoByteFaithful(t *testing.T) {
 		t.Fatalf("marshal template: %v", err)
 	}
 	echo := opLoadEcho(t, "pod", &spec.StructuralKindLoadEnv{
-		Standalone: &spec.StandaloneLoad{Shape: "template", Template: tmpl},
+		Standalone: &spec.StandaloneLoad{Shape: "template", Body: tmpl},
 	})
 	if string(echo) != string(tmpl) {
 		t.Fatalf("template echo not byte-faithful:\n echo: %s\n tmpl: %s", echo, tmpl)
 	}
+}
+
+// deployBody marshals a canonical deploy node the way the host does before it rides the
+// opaque wire (D-SCH-7).
+func deployBody(t *testing.T, dep *spec.Deploy) []byte {
+	t.Helper()
+	out, err := json.Marshal(dep)
+	if err != nil {
+		t.Fatalf("marshal deploy node: %v", err)
+	}
+	return out
 }
