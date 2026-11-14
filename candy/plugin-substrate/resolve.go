@@ -48,24 +48,19 @@ func resolveSubstrateTemplate(in spec.SubstrateTemplateResolveRequest) ([]byte, 
 		}
 		return json.Marshal(reply)
 	case in.Kubernetes != nil:
-		var k spec.Kubernetes
-		if err := json.Unmarshal(in.Kubernetes.Kubernetes, &k); err != nil {
+		// The authored fields ARE #ResolvedKubernetes envelope's (kubeconfig_context) — the
+		// authored body moved into this plugin's CUE module (opencharly/spec#304 unit 5), so
+		// the projection decodes straight into the contract envelope.
+		reply := spec.KubernetesResolveReply{Resolved: &spec.ResolvedKubernetes{Raw: in.Kubernetes.Kubernetes}}
+		if err := json.Unmarshal(in.Kubernetes.Kubernetes, reply.Resolved); err != nil {
 			return nil, fmt.Errorf("kubernetes resolve: decode: %w", err)
 		}
-		reply := spec.KubernetesResolveReply{Resolved: &spec.ResolvedKubernetes{
-			KubeconfigContext: k.KubeconfigContext,
-			Raw:               in.Kubernetes.Kubernetes,
-		}}
 		return json.Marshal(reply)
 	case in.Kindcluster != nil:
-		var k spec.Kindcluster
-		if err := json.Unmarshal(in.Kindcluster.Kindcluster, &k); err != nil {
+		reply := spec.KindclusterResolveReply{Resolved: &spec.ResolvedKindcluster{Raw: in.Kindcluster.Kindcluster}}
+		if err := json.Unmarshal(in.Kindcluster.Kindcluster, reply.Resolved); err != nil {
 			return nil, fmt.Errorf("kindcluster resolve: decode: %w", err)
 		}
-		reply := spec.KindclusterResolveReply{Resolved: &spec.ResolvedKindcluster{
-			KubeconfigContext: k.KubeconfigContext,
-			Raw:               in.Kindcluster.Kindcluster,
-		}}
 		return json.Marshal(reply)
 	case in.KubeVirt != nil:
 		var kv spec.KubeVirt

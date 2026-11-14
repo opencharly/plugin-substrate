@@ -23,14 +23,14 @@
 // FILE ORDER IS LOAD-BEARING. spec/schemaconcat.ConcatSchema sorts a schema dir's files and
 // concatenates them, stripping only the package clause, and a CUE `import` must precede
 // every declaration. So the module's single import lives in the file that sorts FIRST:
-// `local.cue` (which carries the `kind: local` body and with it the import), before
-// `pod.cue` and `substrate.cue`. Renaming any of them without re-checking that order makes
-// the served schema uncompilable at load time.
+// `kindcluster.cue` (which carries the `kind: kindcluster` body and with it the import),
+// before `kubernetes.cue`, `local.cue`, `pod.cue` and `substrate.cue`. Renaming any of them
+// without re-checking that order makes the served schema uncompilable at load time.
 
 // #Pod validates ONE entry of the `pod:` map (PodSpec). Most projects declare no kind:pod
 // entries (the real corpus is all `pod: {}`); the schema is modeled directly from the
 // struct. CLOSED — every PodSpec field is modeled, so an unknown key is a typo. Shared defs
-// REFERENCED, not redefined (R3): schema.#Step / schema.#CandyRef from 00_common.cue,
+// REFERENCED, not redefined (R3): schema.#Step / schema.#CandyRef (the contract's),
 // schema.#DeploySecret from deploy.cue, schema.#Sidecar from sidecar.cue.
 #Pod: {
 	// References a kind:box (bare lowercase-hyphenated name or remote ref).

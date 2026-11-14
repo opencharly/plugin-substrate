@@ -169,3 +169,57 @@ func TestResolveLocal_Projection(t *testing.T) {
 		t.Errorf("Raw not preserved through resolve")
 	}
 }
+
+// TestResolveKubernetes_Projection and TestResolveKindcluster_Projection pin the two OpResolve
+// arms opencharly/spec#304 unit 5 changed: the authored bodies live in THIS plugin's CUE module
+// now, so each arm decodes the authored bytes straight into the contract's resolved envelope
+// instead of through a spec-authored Go type. The point of the pair is the FIELD: the old code
+// copied `KubeconfigContext` by hand, and the direct decode must arrive at the same value
+// (both envelope fields carry the authored `kubeconfig_context` json tag) with Raw verbatim.
+func TestResolveKubernetes_Projection(t *testing.T) {
+	body := []byte(`{"box":"app","kubeconfig_context":"prod-cluster","kubeconfig":"/tmp/kc","default_namespace":"myns"}`)
+	out, err := resolveSubstrateTemplate(spec.SubstrateTemplateResolveRequest{
+		Kubernetes: &spec.KubernetesResolveInput{Kubernetes: body},
+	})
+	if err != nil {
+		t.Fatalf("resolveSubstrateTemplate(kubernetes): %v", err)
+	}
+	var reply spec.KubernetesResolveReply
+	if err := json.Unmarshal(out, &reply); err != nil {
+		t.Fatal(err)
+	}
+	r := reply.Resolved
+	if r == nil {
+		t.Fatal("kubernetes resolve produced no envelope")
+	}
+	if r.KubeconfigContext != "prod-cluster" {
+		t.Errorf("KubeconfigContext = %q, want %q", r.KubeconfigContext, "prod-cluster")
+	}
+	if string(r.Raw) != string(body) {
+		t.Errorf("Raw not preserved through resolve")
+	}
+}
+
+func TestResolveKindcluster_Projection(t *testing.T) {
+	body := []byte(`{"kubeconfig_context":"kind-prod","engine":"docker"}`)
+	out, err := resolveSubstrateTemplate(spec.SubstrateTemplateResolveRequest{
+		Kindcluster: &spec.KindclusterResolveInput{Kindcluster: body},
+	})
+	if err != nil {
+		t.Fatalf("resolveSubstrateTemplate(kindcluster): %v", err)
+	}
+	var reply spec.KindclusterResolveReply
+	if err := json.Unmarshal(out, &reply); err != nil {
+		t.Fatal(err)
+	}
+	r := reply.Resolved
+	if r == nil {
+		t.Fatal("kindcluster resolve produced no envelope")
+	}
+	if r.KubeconfigContext != "kind-prod" {
+		t.Errorf("KubeconfigContext = %q, want %q", r.KubeconfigContext, "kind-prod")
+	}
+	if string(r.Raw) != string(body) {
+		t.Errorf("Raw not preserved through resolve")
+	}
+}
