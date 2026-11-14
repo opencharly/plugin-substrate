@@ -29,14 +29,14 @@
 	disk_size?: string @go(DiskSize)
 	ram?:       string
 	cpu?:       int & >=1 @go(Cpus,type=int) // yaml key is singular `cpu` (VmSpec.Cpus yaml:"cpu")
-	machine?:   or(schema.#VmMachineWord)
+	machine?:   or(_machineWord)
 	// firmware is REQUIRED-with-default (not optional): an if-guard can only
 	// reference a field that always resolves to a concrete value, and an
 	// OPTIONAL field — even one carrying a default — errors with "cannot
 	// reference optional field" when absent. Required-with-default materializes
 	// "bios" on omission (matching the Go empty→bios behavior) AND stays
 	// referenceable by the uefi-secure cross-rule below.
-	firmware: *"bios" | or(schema.#VmFirmwareWord)
+	firmware: *"bios" | or(_vmFirmwareWord)
 
 	backend:   #VmBackend
 	autostart: *false | true
@@ -44,7 +44,7 @@
 	// krun guest has no persistent daemon, so `libvirt` or `qemu` are the words that can honour it
 	// (the guard is the word list; which word actually persists is the backend's business).
 	if autostart {
-		backend: or(schema.#VmBackendWord)
+		backend: or(_backendWord)
 	}
 
 	// krun carries the krun backend's knobs. Optional and ignored by the other
@@ -61,7 +61,7 @@
 	// FIELD-named conflict (null for the struct-valued fields, a negated enum for
 	// machine) rather than a bare `_|_`, whose error names only #Vm.
 	if backend == "krun" {
-		source: schema.#VmSource & {kind: or(schema.#VmKindWord)}
+		source: schema.#VmSource & {kind: or(_vmKindWord)}
 		libvirt?:   null
 		autostart:  false
 		firmware:   "bios"
@@ -182,3 +182,19 @@
 // #VmValue — the HOST-SIDE value gate def for the `vm` kind (the `#PodValue` analogue). @go(-):
 // the plugin keeps no typed Go body for it; the resolve envelope carries the raw bytes.
 #VmValue: (#Vm | schema.#DeployValue) @go(-)
+
+// --- vocabulary tables (S3), moved with the body ---------------------------------
+// The four sets the vm BODY cites and nothing else did (opencharly/spec#304 unit 8): the
+// contract keeps only the tables its own keepers cite. `@vocab` names the owner (§3.1):
+// these sets are compiled into THIS plugin's module now.
+_machine: {q35: {}, virt: {}, i440fx: {}, pc: {}} @vocab(plugin-substrate)
+_machineWord: [for w, _ in _machine {w}]
+
+_vmFirmware: {bios: {}, "uefi-insecure": {}, "uefi-secure": {}} @vocab(plugin-substrate)
+_vmFirmwareWord: [for w, _ in _vmFirmware {w}]
+
+_backend: {auto: {}, libvirt: {}} @vocab(plugin-substrate)
+_backendWord: [for w, _ in _backend {w}]
+
+_vmKind: {container_disk: {}, bootc: {}} @vocab(plugin-substrate)
+_vmKindWord: [for w, _ in _vmKind {w}]
