@@ -5,9 +5,10 @@
 // reads it out of the schema composed from the base and every served plugin unit.
 // opencharly/spec#304 unit 7 moved it here.
 //
-// WHAT CAME WITH IT: the thirty-one `#Firecracker*` sub-defs (cited only by this body) and the
-// `#FirecrackerValue` twin, which lives at the foot of this file. What STAYS in the contract —
-// `schema.#Android`, `schema.#Step`, `schema.#VmCloudInit` — is cited as `schema.#…`.
+// WHAT CAME WITH IT: thirty-one `#Firecracker*` defs, the top-level `#Firecracker` among them
+// (thirty named sub-defs plus the twin), which live at the foot of this file. What STAYS in the
+// contract and is CITED in this file's code — `schema.#Step` (the plan), `schema.#VmCloudInit`
+// (cloud_init) and `schema.#DeployValue` (the twin's other arm) — is spelled `schema.#…`.
 //
 // THE BODY DESCRIBES A HOST, not a running guest: the VMM, the kernel, the network, containerd and
 // the runner pools are the host's capabilities; the microVM shape rides beside them. Its resolve
