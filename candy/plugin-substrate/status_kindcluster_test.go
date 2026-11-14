@@ -9,7 +9,6 @@ package substratekind
 
 import (
 	"context"
-	"encoding/json"
 	"os/exec"
 	"testing"
 
@@ -88,10 +87,9 @@ func TestEphemeralKindclusterLiveness_NoClusterIsDead(t *testing.T) {
 // TestKindclusterSpecFor_ResolvesContext asserts the collector resolves a referenced
 // kindcluster template to its kubeconfig context via this provider's own resolve arm.
 func TestKindclusterSpecFor_ResolvesContext(t *testing.T) {
-	body, err := json.Marshal(spec.Kindcluster{KubeconfigContext: "kind-lab"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	// spec.Kindcluster is gone (opencharly/spec#304 unit 5): the collector reads the
+	// authored body as opaque bytes.
+	body := []byte(`{"kubeconfig_context":"kind-lab"}`)
 	templates := &spec.ProjectTemplates{
 		Kindcluster: map[string]spec.RawBody{"kind-lab-cluster": body},
 	}

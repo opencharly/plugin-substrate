@@ -1,7 +1,6 @@
 package substratekind
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/opencharly/spec/spec"
@@ -11,11 +10,8 @@ import (
 // given cluster/context — the shape resolveSubstrateTemplate decodes.
 func kubevirtTemplateBody(t *testing.T, cluster, ctx string) spec.RawBody {
 	t.Helper()
-	body, err := json.Marshal(spec.KubeVirt{Cluster: cluster, KubeContext: ctx})
-	if err != nil {
-		t.Fatalf("marshal kubevirt template body: %v", err)
-	}
-	return body
+	// spec.KubeVirt is gone (opencharly/spec#304 unit 6): the collector reads opaque bytes.
+	return []byte(`{"cluster":"` + cluster + `","kube_context":"` + ctx + `"}`)
 }
 
 func TestKubevirtDeployEntries(t *testing.T) {
