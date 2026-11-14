@@ -368,16 +368,17 @@ import "github.com/opencharly/spec/schema"
 // Every closed set of words is a table keyed by word, `<x>Word` is derived from it,
 // and the enum an author meets is `or(<x>Word)` — so the table and the enum cannot
 // disagree and a new word is ONE row here. `@vocab` names the owner (§3.1): these
-// sets are compiled into THIS contract module, so the owner is `spec`.
+// sets are compiled into THIS plugin's module since opencharly/spec#304 unit 7 moved them with
+// the body, so the owner is `plugin-substrate`.
 //
 // Each table is named after its word when that name is unique in the schema, and
 // `<definition><Field>` when it is not; the comment above it names its site.
 
 // #FirecrackerForwarding.policy
-_firecrackerForwardingPolicy: {"append-accept": {}, netns: {}, deny: {}} @vocab(spec)
+_firecrackerForwardingPolicy: {"append-accept": {}, netns: {}, deny: {}} @vocab(plugin-substrate)
 _firecrackerForwardingPolicyWord: [for w, _ in _firecrackerForwardingPolicy {w}]
 // #FirecrackerMachine.huge_pages
-_hugePages: {"None": {}, "Transparent": {}, "2M": {}} @vocab(spec)
+_hugePages: {"None": {}, "Transparent": {}, "2M": {}} @vocab(plugin-substrate)
 _hugePagesWord: [for w, _ in _hugePages {w}]
 // #FirecrackerMachine.cpu_template
 _cpuTemplate: {
@@ -388,7 +389,7 @@ _cpuTemplate: {
 	"T2CL": {}
 	"T2A": {}
 	"V1N1": {}
-} @vocab(spec)
+} @vocab(plugin-substrate)
 _cpuTemplateWord: [for w, _ in _cpuTemplate {w}]
 // #FirecrackerConsole.log_level
 _firecrackerConsoleLogLevel: {
@@ -398,16 +399,16 @@ _firecrackerConsoleLogLevel: {
 	"Debug": {}
 	"Trace": {}
 	"Off": {}
-} @vocab(spec)
+} @vocab(plugin-substrate)
 _firecrackerConsoleLogLevelWord: [for w, _ in _firecrackerConsoleLogLevel {w}]
 // #FirecrackerContainerd.manage
-_manage: {merge: {}, full: {}, adopt: {}} @vocab(spec)
+_manage: {merge: {}, full: {}, adopt: {}} @vocab(plugin-substrate)
 _manageWord: [for w, _ in _manage {w}]
 // #FirecrackerFireactions.log_level
-_firecrackerFireactionsLogLevel: {info: {}, debug: {}, warn: {}, error: {}} @vocab(spec)
+_firecrackerFireactionsLogLevel: {info: {}, debug: {}, warn: {}, error: {}} @vocab(plugin-substrate)
 _firecrackerFireactionsLogLevelWord: [for w, _ in _firecrackerFireactionsLogLevel {w}]
 // #FirecrackerRunner.image_pull_policy
-_imagePullPolicy: {"IfNotPresent": {}, "Always": {}, "Never": {}} @vocab(spec)
+_imagePullPolicy: {"IfNotPresent": {}, "Always": {}, "Never": {}} @vocab(plugin-substrate)
 _imagePullPolicyWord: [for w, _ in _imagePullPolicy {w}]
 
 // #FirecrackerValue — the HOST-SIDE value gate def for the `firecracker` kind (the `#PodValue` /
