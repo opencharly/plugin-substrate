@@ -63,16 +63,13 @@ func resolveSubstrateTemplate(in spec.SubstrateTemplateResolveRequest) ([]byte, 
 		}
 		return json.Marshal(reply)
 	case in.KubeVirt != nil:
-		var kv spec.KubeVirt
-		if err := json.Unmarshal(in.KubeVirt.KubeVirt, &kv); err != nil {
+		// The authored body lives in this plugin's CUE module now (opencharly/spec#304 unit 6),
+		// so the projection decodes straight into the contract envelope instead of through a
+		// spec-authored Go type.
+		reply := spec.KubeVirtResolveReply{Resolved: &spec.ResolvedKubeVirt{Raw: in.KubeVirt.KubeVirt}}
+		if err := json.Unmarshal(in.KubeVirt.KubeVirt, reply.Resolved); err != nil {
 			return nil, fmt.Errorf("kubevirt resolve: decode: %w", err)
 		}
-		reply := spec.KubeVirtResolveReply{Resolved: &spec.ResolvedKubeVirt{
-			Cluster:     kv.Cluster,
-			KubeContext: kv.KubeContext,
-			Namespace:   kv.Namespace,
-			Raw:         in.KubeVirt.KubeVirt,
-		}}
 		return json.Marshal(reply)
 	case in.Android != nil:
 		var a spec.Android
