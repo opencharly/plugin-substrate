@@ -5,8 +5,12 @@
 // reads it out of the schema composed from the base and every served plugin unit.
 // opencharly/spec#304 unit 8 moved it here.
 //
-// WHAT CAME WITH IT: seven defs — `#Vm` itself, `schema.#VmBackend`, `schema.#VmBackendName`, `schema.#VmChecksum`,
-// `schema.#VmInstaller`, `schema.#VmKeyInjection` and `schema.#VmCharlyInstall` — plus the `#VmValue` twin at the foot.
+// WHAT CAME WITH IT: `#Vm` alone, plus the `#VmValue` twin at the foot — nothing else. Six defs that
+// arrived with it in #42 (`#VmBackend`, `#VmBackendName`, `#VmChecksum`, `#VmInstaller`,
+// `#VmKeyInjection`, `#VmCharlyInstall`) turned out to be keepers: the contract's own keepers and
+// the `spec.VmBackends` generator cite them, so the contract keeps them and this file cites them as
+// `schema.#…`. The pin wave's D-PAT control is what made the duplication visible, and this leg
+// removed it.
 //
 // WHAT STAYED IN THE CONTRACT, and why the line falls here: the resolve ENVELOPE, `#ResolvedVm`,
 // type-cites `#VmSource`, `#VmNetwork`, `#VmSsh`, `#VmCloudInit`, `#VmKrun`, `#VmSnapshot` and
@@ -99,11 +103,6 @@
 	plan?: [...schema.#Step]
 	snapshot?: [...schema.#VmSnapshot] @go(Snapshots)
 }
-
-
-
-
-
 
 
 // #VmValue — the HOST-SIDE value gate def for the `vm` kind (the `#PodValue` analogue). @go(-):
