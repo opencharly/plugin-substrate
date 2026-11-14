@@ -124,6 +124,7 @@ var substrateKindInputDefs = map[string]string{
 	"kubernetes":  "#KubernetesValue",
 	"kindcluster": "#KindclusterValue",
 	"kubevirt":    "#KubevirtValue",
+	"firecracker": "#FirecrackerValue",
 }
 
 // NewProvider returns the substrate kind provider for in-proc registration or out-of-proc serving.

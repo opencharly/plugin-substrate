@@ -3,16 +3,14 @@
 // THE KIND BODY LIVES HERE. This plugin's `kind: kindcluster` capability declares the gate def
 // (`plugin.go`: `InputDef: "#KindclusterValue"`). opencharly/spec#304 unit 5 moved it here.
 //
-// IT CARRIES THE MODULE'S SINGLE IMPORT. `kindcluster.cue` sorts FIRST in this schema
-// directory, and spec/schemaconcat.ConcatSchema concatenates a module's files in sorted order
-// with only the package clause stripped, so the one `import` must precede every declaration
-// of the module — it moved here from `local.cue`, which sorted first until this body landed.
+// THE MODULE'S SINGLE IMPORT LIVES IN `firecracker.cue`, which sorts FIRST in this schema
+// directory (opencharly/spec#304 unit 7 moved it there when the firecracker body landed).
+// spec/schemaconcat.ConcatSchema concatenates a module's files in sorted order with only the
+// package clause stripped, so the one `import` must precede every declaration of the module.
 //
 // WHAT STAYED IN THE CONTRACT: `schema.#Step`, `schema.#Deploy`, `schema.#DeployValue`, `schema.#EngineName`,
 // `schema.#KubernetesDeploy` are cited as `schema.#…`. The `#Kubernetes*` policy sub-defs are this
 // module's own now (they arrived with `kubernetes.cue`).
-
-import "github.com/opencharly/spec/schema"
 
 // CUE schema for the `kindcluster` kind. #Kindcluster validates ONE value of the
 // `kindcluster:` map — a local Kubernetes-in-Docker cluster provisioned by the

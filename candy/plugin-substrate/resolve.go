@@ -111,10 +111,9 @@ func resolveSubstrateTemplate(in spec.SubstrateTemplateResolveRequest) ([]byte, 
 		}}
 		return json.Marshal(reply)
 	case in.Firecracker != nil:
-		var fc spec.Firecracker
-		if err := json.Unmarshal(in.Firecracker.Firecracker, &fc); err != nil {
-			return nil, fmt.Errorf("firecracker resolve: decode: %w", err)
-		}
+		// The authored body moved into this plugin's CUE module (opencharly/spec#304 unit 7), and
+		// the envelope carries the RAW bytes alone, so no typed decode is needed: the CUE gate
+		// validates the body's shape, and the venue fills the host.
 		// The envelope carries the RAW body and nothing more: a `kind: firecracker` template
 		// describes the HOST's capabilities (the VMM, the kernel, the network, containerd, the
 		// runner pools) and the microVM shape — it names no hostname, because the HOST is the
