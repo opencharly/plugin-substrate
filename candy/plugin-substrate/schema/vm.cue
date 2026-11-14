@@ -40,9 +40,10 @@
 
 	backend:   #VmBackend
 	autostart: *false | true
-	// autostart:true requires an explicit backend word: `auto` is a detection placeholder and a
-	// krun guest has no persistent daemon, so `libvirt` or `qemu` are the words that can honour it
-	// (the guard is the word list; which word actually persists is the backend's business).
+	// autostart:true requires an authoring backend word: the guard is `or(_backendWord)`, whose
+	// rows are `auto` and `libvirt`. `auto` resolves by detection at apply time, so `libvirt` is
+	// the explicit choice; a `krun` guest has no persistent daemon at all (and `qemu` is a
+	// PROVIDER word in `#VmBackendName`, not a row of this authoring table).
 	if autostart {
 		backend: or(_backendWord)
 	}
