@@ -11,10 +11,15 @@ import (
 // projects spec.Vm → ResolvedVm (field-copy + Raw). Without the resolve leg the kernel's
 // vm build/deploy consumers cannot read the de-typed, opaque vm template.
 func TestResolveVm_FieldCopy(t *testing.T) {
-	body, err := json.Marshal(spec.Vm{Backend: "libvirt", Cpus: 4, Ram: "8G", Firmware: "uefi"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	// spec.Vm is deleted with the vm body (opencharly/spec#304 unit 8): the arm consumes the
+	// authored bytes and projects them into the contract envelope, so the fixture is the wire
+	// JSON the body marshals to.
+	//
+	// THE FIX THIS PINS: the former hand copy carried fourteen fields and SILENTLY DROPPED
+	// `krun` (the envelope has Krun; the literal never copied it). The envelope-direct decode
+	// populates every envelope field, so this fixture names all of them and each is asserted —
+	// the krun assertion is the one that fails against the old projection.
+	body := []byte(`{"source":{"kind":"cloud_image","url":"https://example.com/disk.qcow2"},"disk_size":"64G","ram":"8G","cpu":4,"machine":"q35","firmware":"uefi","backend":"libvirt","autostart":true,"network":{"mode":"user"},"ssh":{"user":"charly"},"cloud_init":{"hostname":"gw"},"libvirt":{"memory":2048},"krun":{"network":"passt"},"plan":[{"run":"true"}],"snapshot":[{"name":"s1"}]}`)
 	out, err := resolveSubstrateTemplate(spec.SubstrateTemplateResolveRequest{
 		Vm: &spec.VmResolveInput{Vm: body},
 	})
@@ -26,8 +31,21 @@ func TestResolveVm_FieldCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := reply.Resolved
-	if r == nil || r.Backend != "libvirt" || r.Cpus != 4 || r.Ram != "8G" || r.Firmware != "uefi" {
-		t.Fatalf("vm field copy failed: %+v", r)
+	if r == nil {
+		t.Fatal("vm resolve produced no envelope")
+	}
+	if r.Source.Kind != "cloud_image" || r.DiskSize != "64G" || r.Ram != "8G" || r.Cpus != 4 ||
+		r.Machine != "q35" || r.Firmware != "uefi" || r.Backend != "libvirt" || !r.Autostart {
+		t.Errorf("scalar fields did not survive the projection: %+v", r)
+	}
+	if r.Network == nil || r.SSH == nil || r.CloudInit == nil || r.Libvirt == nil {
+		t.Errorf("structured fields did not survive: network=%v ssh=%v cloud_init=%v libvirt=%v", r.Network, r.SSH, r.CloudInit, r.Libvirt)
+	}
+	if r.Krun == nil || r.Krun.Network != "passt" {
+		t.Errorf("krun did not survive the projection — the former hand copy dropped it: %+v", r.Krun)
+	}
+	if len(r.Plan) != 1 || len(r.Snapshots) != 1 {
+		t.Errorf("plan/snapshot did not survive: plan=%v snapshot=%v", r.Plan, r.Snapshots)
 	}
 	if string(r.Raw) != string(body) {
 		t.Errorf("Raw not preserved through resolve")

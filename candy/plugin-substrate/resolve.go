@@ -88,27 +88,17 @@ func resolveSubstrateTemplate(in spec.SubstrateTemplateResolveRequest) ([]byte, 
 		}}
 		return json.Marshal(reply)
 	case in.Vm != nil:
-		var v spec.Vm
-		if err := json.Unmarshal(in.Vm.Vm, &v); err != nil {
+		// The vm body's authored fields ARE the #ResolvedVm envelope's fields (the envelope
+		// carries source/disk_size/ram/cpu/machine/firmware/backend/autostart/network/ssh/
+		// cloud_init/libvirt/krun/plan/snapshot + raw), so the projection decodes STRAIGHT into
+		// the contract's envelope and copies nothing by hand — the local.cue pattern. The former
+		// `var v spec.Vm` plus a fourteen-field copy existed only because the authored body had a
+		// Go type of its own; opencharly/spec#304 unit 8 moved that body into this plugin's CUE
+		// module (schema/vm.cue), and the envelope is the kernel's read surface.
+		reply := spec.VmResolveReply{Resolved: &spec.ResolvedVm{Raw: in.Vm.Vm}}
+		if err := json.Unmarshal(in.Vm.Vm, reply.Resolved); err != nil {
 			return nil, fmt.Errorf("vm resolve: decode: %w", err)
 		}
-		reply := spec.VmResolveReply{Resolved: &spec.ResolvedVm{
-			Source:    v.Source,
-			DiskSize:  v.DiskSize,
-			Ram:       v.Ram,
-			Cpus:      v.Cpus,
-			Machine:   v.Machine,
-			Firmware:  v.Firmware,
-			Backend:   v.Backend,
-			Autostart: v.Autostart,
-			Network:   v.Network,
-			SSH:       v.SSH,
-			CloudInit: v.CloudInit,
-			Libvirt:   v.Libvirt,
-			Plan:      v.Plan,
-			Snapshots: v.Snapshots,
-			Raw:       in.Vm.Vm,
-		}}
 		return json.Marshal(reply)
 	case in.Firecracker != nil:
 		// The authored body moved into this plugin's CUE module (opencharly/spec#304 unit 7), so
