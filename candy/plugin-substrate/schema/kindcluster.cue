@@ -18,7 +18,7 @@ import "github.com/opencharly/spec/schema"
 // `kindcluster:` map — a local Kubernetes-in-Docker cluster provisioned by the
 // upstream `kind` tool (kubernetes-sigs/kind), the local-cluster sibling of the
 // `kubernetes:` cluster template. CLOSED — every Kindcluster field is modeled, so
-// an unknown key is a typo. Shared schema.#Step from 00_common.cue; the cluster-policy
+// an unknown key is a typo. The shared defs it cites are `schema.#…`; the cluster-policy
 // sub-blocks (storage/ingress/image_default/pod_default/defaults) are the SAME
 // defs the `kubernetes:` template uses (R3 — one policy surface for both).
 //
@@ -27,7 +27,7 @@ import "github.com/opencharly/spec/schema"
 // field.
 //
 // Template vs deploy: like every substrate kind, the value is the disjunction
-// `#Kindcluster | schema.#DeployValue` (see node.cue #KindclusterValue), routed by SHAPE in
+// `#Kindcluster | schema.#DeployValue` (see #KindclusterValue below), routed by SHAPE in
 // the loader — a TEMPLATE carries the cluster config (engine/node_image/nodes); a
 // DEPLOY carries `from:`/`image:` + the deploy config (`engine:`, `deploy:`). The
 // workload the cluster runs reuses schema.#KubernetesDeploy (schema.#Deploy.deploy:) unchanged —
@@ -97,13 +97,14 @@ import "github.com/opencharly/spec/schema"
 // Every closed set of words is a table keyed by word, `<x>Word` is derived from it,
 // and the enum an author meets is `or(<x>Word)` — so the table and the enum cannot
 // disagree and a new word is ONE row here. `@vocab` names the owner (§3.1): these
-// sets are compiled into THIS contract module, so the owner is `spec`.
+// sets are compiled into THIS plugin's module since opencharly/spec#304 unit 5 moved them
+// with the body, so the owner is `plugin-substrate`.
 //
 // Each table is named after its word when that name is unique in the schema, and
 // `<definition><Field>` when it is not; the comment above it names its site.
 
 // #Kindcluster.admission_policy
-_kindclusterAdmissionPolicy: {restricted: {}, baseline: {}, privileged: {}} @vocab(spec)
+_kindclusterAdmissionPolicy: {restricted: {}, baseline: {}, privileged: {}} @vocab(plugin-substrate)
 _kindclusterAdmissionPolicyWord: [for w, _ in _kindclusterAdmissionPolicy {w}]
 
 // #KindclusterValue — the HOST-SIDE value gate def for the `kindcluster` kind; the same shape

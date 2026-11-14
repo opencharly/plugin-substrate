@@ -22,7 +22,9 @@
 // shapes are constrained. ONE exception: `pod_default.tolerations` stays OPEN —
 // it is a genuine passthrough of raw Kubernetes Toleration objects
 // ([]map[string]any). Plural field names that mirror Kubernetes output keys are
-// preserved verbatim. Shared schema.#Step from 00_common.cue.
+// preserved verbatim. The ONE shared def it cites is `schema.#Step` (the contract's),
+// spelled with the `schema.` prefix because a plugin's CUE module can import only the
+// contract module.
 
 #Kubernetes: {
 	// May be empty (a cluster-policy-only template runs no workload itself).
@@ -108,7 +110,8 @@
 // Every closed set of words is a table keyed by word, `<x>Word` is derived from it,
 // and the enum an author meets is `or(<x>Word)` — so the table and the enum cannot
 // disagree and a new word is ONE row here. `@vocab` names the owner (§3.1): these
-// sets are compiled into THIS contract module, so the owner is `spec`.
+// sets are compiled into THIS plugin's module since opencharly/spec#304 unit 5 moved them
+// with the body, so the owner is `plugin-substrate`.
 //
 // Each table is named after its word when that name is unique in the schema, and
 // `<definition><Field>` when it is not; the comment above it names its site.

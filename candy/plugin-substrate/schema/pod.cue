@@ -30,7 +30,7 @@
 // #Pod validates ONE entry of the `pod:` map (PodSpec). Most projects declare no kind:pod
 // entries (the real corpus is all `pod: {}`); the schema is modeled directly from the
 // struct. CLOSED — every PodSpec field is modeled, so an unknown key is a typo. Shared defs
-// REFERENCED, not redefined (R3): schema.#Step / schema.#CandyRef from 00_common.cue,
+// REFERENCED, not redefined (R3): schema.#Step / schema.#CandyRef (the contract's),
 // schema.#DeploySecret from deploy.cue, schema.#Sidecar from sidecar.cue.
 #Pod: {
 	// References a kind:box (bare lowercase-hyphenated name or remote ref).
