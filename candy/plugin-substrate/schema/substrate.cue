@@ -5,8 +5,9 @@
 // ONE CUE MODULE PACKAGE, SEVEN FILES. This file carries the declaration surface and
 // references no base def; `firecracker.cue` carries the `kind: firecracker` ENTITY body and
 // the module's single contract import, `kindcluster.cue` the `kind: kindcluster` body,
-// `kubernetes.cue` the `kind: kubernetes` body (with its
-// own policy sub-defs and vocabulary tables), and `local.cue` / `pod.cue` their bodies.
+// `kubernetes.cue` the `kind: kubernetes` body (with its own policy sub-defs and vocabulary
+// tables), `kubevirt.cue` the `kind: kubevirt` body (with its twelve sub-defs), and
+// `local.cue` / `pod.cue` their bodies.
 // The module composes as ONE package — `schemaconcat.ConcatSchema` concatenates a schema
 // dir's files in sorted order and strips only the package clause, so the single `import`
 // lives in the file that sorts FIRST (`firecracker.cue`, before the other six). It is composed by

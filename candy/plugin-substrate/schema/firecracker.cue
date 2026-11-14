@@ -69,7 +69,11 @@ import "github.com/opencharly/spec/schema"
 
 // #FirecrackerKernel is the guest kernel the microVMs boot. `from` is an artefact
 // reference (an OCI artefact whose layer carries the kernel, or a pinned URL);
-// `path` is a file already present on the host. Exactly one is required.
+// `path` is a file already present on the host. At most one form is meaningful — set
+// `from` OR `path`, never both — but neither is REQUIRED by this closed schema: a template
+// that names neither inherits the host's own kernel, which is what an operator-managed
+// firecracker host already carries. (The earlier text claimed "exactly one is required",
+// which no enforcer anywhere made true; the schema is the authority and this states it.)
 #FirecrackerKernel: {
 	from?: string & !=""  // artefact ref / URL
 	path?: string & !=""  // host path
@@ -175,7 +179,7 @@ import "github.com/opencharly/spec/schema"
 }
 
 #FirecrackerTokenBucket: {
-	size: int & >0 @go(,type=int)
+	size: int & >0 @go(Size,type=int)
 	refill_time: int & >0 @go(RefillTime,type=int) // milliseconds
 	one_time_burst?: int & >=0 @go(OneTimeBurst,type=int)
 }
@@ -209,7 +213,7 @@ import "github.com/opencharly/spec/schema"
 	// guest_cid must be >= 3 (2 is the host); the substrate allocates one per
 	// microVM when absent, since one device serves all guests.
 	guest_cid?: int & >=3 @go(GuestCID,type=int)
-	uds_path?: string @go(UDS_Path)
+	uds_path?: string @go(UDSPath)
 }
 
 #FirecrackerConsole: {
