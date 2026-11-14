@@ -13,6 +13,14 @@ package substratekind
 //	bodies' `disk_size`, `machine`, `cloud_init`, `ssh`, `libvirt`, `snapshot`… become
 //	"field not allowed".
 //
+// SECOND MEASUREMENT (round 2 of the RCA): it is not a narrowing of `#Vm` alone — EVERY def this
+// file adds is EMPTY in the composed unit (`#VmCharlyInstall` 0 fields, `#VmChecksum` 0,
+// `#VmValue` 0) while the SERVED TEXT carries them intact (`#Vm: {` at line 1134 of the 64,071-byte
+// served schema, `#VmCharlyInstall: {` at 1229). So the loss happens in schemacompose's module
+// instance, not in the concatenation, and the leading suspect is the `schema.#…` resolution of a
+// file that sorts AFTER the import carrier (`vm.cue` is last; every earlier unit is also last or
+// middle and works, so the difference to find is what makes THIS file's references unresolvable).
+//
 // It is a DIAGNOSTIC, not a gate: it logs the composed shape and fails only if the shape is no
 // longer the narrowed one, so the next session can see when the composition changes.
 
