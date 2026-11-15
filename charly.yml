@@ -62,7 +62,7 @@ check-substrate-app:
             /etc/check-substrate-marker in the guest) so the member has a deterministic,
             collision-free deploy effect.
         candy:
-            - '@github.com/opencharly/layer-check-substrate-layer:v2026.271.2307'
+            - '@github.com/opencharly/layer-check-substrate-layer:v2026.314.0705'
 
 check-substrate:
     vm:
