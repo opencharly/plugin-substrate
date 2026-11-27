@@ -20,7 +20,7 @@ plugin-substrate:
             (install-ledger) + the probes — relocated here from charly core, reached by the host's
             `charly status` fan-out; the deploy-cone-coupled enrichment + the vm/kubernetes/kubevirt collectors
             live here too (relocated from core in K5), as do the kindcluster and firecracker collectors
-            (later waves). kubevirt is the 6th deploy substrate (a KubeVirt VM on a
+            (later waves). kubevirt is the cluster-scheduled VM substrate (a KubeVirt VM on a
             cluster), declaring the ssh venue WITHOUT exclusive_venue + a deep OpValidate (the source-arm XOR + GPU resource XOR).
         plugin:
             source: github.com/opencharly/plugin-substrate/candy/plugin-substrate

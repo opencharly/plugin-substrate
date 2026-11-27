@@ -144,7 +144,7 @@ func CliMain(args []string) int {
 	return 0
 }
 
-// NewMeta advertises the 8 STRUCTURAL substrate kind capabilities (Class "kind",
+// NewMeta advertises one STRUCTURAL substrate kind capability per substrate word (Class "kind",
 // Structural:true) + this plugin's OWN CUE schema (schema/*.cue, served via sdk.NewMeta →
 // BuildCapabilities): there is NO schema-less plugin. Each kind declares InputDef:"" — the
 // rich substrate value is validated HOST-SIDE against the #<Kind>Value def (runPluginKind →
