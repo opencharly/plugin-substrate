@@ -24,7 +24,7 @@
 // generated type either.
 //
 // It DOCUMENTS the substrate provider's kind/command/verb words and the deploy traits they carry. The rich substrate VALUES are validated HOST-SIDE against the kept `#<Kind>Value` defs. EVERY served kind declares `InputDef:"#<Word>Value"` and owns its body in this schema dir (`schema/<word>.cue`), so the host resolves the gate def from that DECLARATION and reads it out of the composed unit rather than the base's `spec.KindValueDefs` compatibility fallback.
-#SubstratePlugin: {
+#SubstrateProvider: {
 	// The structural deploy kind words this provider serves.
 	kinds: [...string]
 
