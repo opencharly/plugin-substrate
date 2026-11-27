@@ -111,13 +111,12 @@ var substrateTraits = map[string]*spec.DeployTraits{
 // MOVE, never an optional extra: without it the host keeps answering from the base, so the
 // def could not be deleted there.
 //
-// A word ABSENT from this table declares nothing, because its body still lives in the base
-// and the fallback is still its correct answer. "pod" was the first moved word
-// (opencharly/spec#304 unit 3, body in schema/pod.cue), "local" the second (unit 4, body in
-// schema/local.cue) and "kubernetes" + "kindcluster" the third (unit 5, bodies in
-// schema/kubernetes.cue and schema/kindcluster.cue); each sibling moves the same way, one
-// unit at a time, adding exactly its own row here. The table is keyed by the SAME word list
-// as substrateTraits, so a word cannot declare a def without also declaring its traits.
+// Every served word has a row here, because every body has moved into this plugin's CUE module:
+// "pod" first (opencharly/spec#304 unit 3, body in schema/pod.cue), "local" second (unit 4),
+// "kubernetes" + "kindcluster" third (unit 5), then kubevirt (unit 6), firecracker (unit 7)
+// and vm (unit 8). A word whose body moved adds exactly its own row here. The table is keyed by
+// the SAME word list as substrateTraits, so a word cannot declare a def without also declaring
+// its traits — and TestEveryServedWordDeclaresItsGateDef pins that every served word has one.
 var substrateKindInputDefs = map[string]string{
 	"pod":         "#PodValue",
 	"local":       "#LocalValue",
@@ -146,15 +145,16 @@ func CliMain(args []string) int {
 
 // NewMeta advertises one STRUCTURAL substrate kind capability per substrate word (Class "kind",
 // Structural:true) + this plugin's OWN CUE schema (schema/*.cue, served via sdk.NewMeta →
-// BuildCapabilities): there is NO schema-less plugin. Each kind declares InputDef:"" — the
-// rich substrate value is validated HOST-SIDE against the #<Kind>Value def (runPluginKind →
-// foldSubstrateKind → validateKindValueCUE), NOT by this served schema — EXCEPT "pod" and
-// "local", whose bodies this plugin now OWNS (opencharly/spec#304 units 3 and 4): each of
-// their capabilities declares InputDef:"#<Word>Value", so the host resolves the gate def
-// from the DECLARATION and reads it from the COMPOSED unit (schema/pod.cue, schema/local.cue)
-// instead of the base's spec.KindValueDefs compatibility fallback. That declaration is what
-// lets the base drop the def; the ROUTING is unchanged either way, because each word still
-// declares DeployTraits and therefore still folds through foldSubstrateKind. #SubstratePlugin documents the provider's
+// BuildCapabilities): there is NO schema-less plugin. EVERY served kind declares
+// InputDef:"#<Word>Value" — the host resolves the gate def from that DECLARATION and reads it
+// from the COMPOSED unit (schema/<word>.cue) instead of the base's spec.KindValueDefs
+// compatibility fallback. "pod" and "local" were the first two bodies to move here
+// (opencharly/spec#304 units 3 and 4) and units 5-8 followed with kubernetes + kindcluster,
+// kubevirt, firecracker and vm. That declaration is what lets the base drop the defs; the
+// ROUTING is unchanged either way, because each word still declares DeployTraits and therefore
+// still folds through foldSubstrateKind. The rich substrate VALUE is validated HOST-SIDE
+// against the #<Kind>Value def (runPluginKind → foldSubstrateKind → validateKindValueCUE), NOT
+// by this served schema. #SubstratePlugin documents the provider's
 // declaration surface and satisfies the uniform non-empty-schema contract. "vm" and "kubevirt"
 // declare Validates:true (F7/C8) — "vm"'s deep OpValidate check (validate_vm.go) closes the one
 // proven gap the host's closedness-only value gate cannot express (PCI-hostdev field

@@ -2,15 +2,15 @@
 // plugin's served declaration surface (there is no schema-less plugin: every plugin ships a
 // non-empty schema over Describe).
 //
-// ONE CUE MODULE PACKAGE, SEVEN FILES. This file carries the declaration surface and
+// ONE CUE MODULE PACKAGE, EIGHT FILES. This file carries the declaration surface and
 // references no base def; `firecracker.cue` carries the `kind: firecracker` ENTITY body and
 // the module's single contract import, `kindcluster.cue` the `kind: kindcluster` body,
 // `kubernetes.cue` the `kind: kubernetes` body (with its own policy sub-defs and vocabulary
 // tables), `kubevirt.cue` the `kind: kubevirt` body (with its twelve sub-defs), and
-// `local.cue` / `pod.cue` their bodies.
+// `local.cue` / `pod.cue` / `vm.cue` their bodies.
 // The module composes as ONE package — `schemaconcat.ConcatSchema` concatenates a schema
 // dir's files in sorted order and strips only the package clause, so the single `import`
-// lives in the file that sorts FIRST (`firecracker.cue`, before the other six). It is composed by
+// lives in the file that sorts FIRST (`firecracker.cue`, before the other seven). It is composed by
 // the SAME code on both sides of the wire — spec/schemacompose on the serve side
 // (sdk.BuildCapabilitiesWithRequires → ServedSchema) and on the host side
 // (registerPluginUnitSchema → ServedText, which unifies the unit onto the base); a unit that
@@ -23,7 +23,7 @@
 // authored bytes straight into the contract's `#ResolvedPod` envelope, so it needs no
 // generated type either.
 //
-// It DOCUMENTS the substrate provider's kind/command/verb words and the deploy traits they carry. The rich substrate VALUES are validated HOST-SIDE against the kept `#<Kind>Value` defs. Each capability declares `InputDef:""` — the base still declares its def — EXCEPT `pod`, whose body lives here and whose capability declares `InputDef:"#PodValue"`.
+// It DOCUMENTS the substrate provider's kind/command/verb words and the deploy traits they carry. The rich substrate VALUES are validated HOST-SIDE against the kept `#<Kind>Value` defs. EVERY served kind declares `InputDef:"#<Word>Value"` and owns its body in this schema dir (`schema/<word>.cue`), so the host resolves the gate def from that DECLARATION and reads it out of the composed unit rather than the base's `spec.KindValueDefs` compatibility fallback.
 #SubstratePlugin: {
 	// The structural deploy kind words this provider serves.
 	kinds: [...string]

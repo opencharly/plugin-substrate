@@ -2,6 +2,7 @@ package substratekind
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -21,6 +22,29 @@ func TestSubstrateWordsExactSet(t *testing.T) {
 	for word := range substrateTraits {
 		if !slices.Contains(substrateWords, word) {
 			t.Errorf("substrateTraits declares a row for %q, which substrateWords does not serve", word)
+		}
+	}
+}
+
+// TestEveryServedWordDeclaresItsGateDef pins the OTHER half of the same declaration surface:
+// every word this provider serves owns its body in this plugin's CUE module, so every word must
+// declare the `#<Word>Value` gate def the host resolves from that declaration. A word served
+// without a def silently falls back to the base's spec.KindValueDefs compatibility map, which is
+// exactly the half-migrated state the declaration exists to remove.
+func TestEveryServedWordDeclaresItsGateDef(t *testing.T) {
+	for _, word := range substrateWords {
+		def := substrateKindInputDefs[word]
+		if def == "" {
+			t.Errorf("substrateWords serves %q but substrateKindInputDefs declares no gate def for it", word)
+			continue
+		}
+		if want := "#" + strings.ToUpper(word[:1]) + word[1:] + "Value"; def != want {
+			t.Errorf("substrateKindInputDefs[%q] = %q, want %q (the def the composed schema unit carries)", word, def, want)
+		}
+	}
+	for word := range substrateKindInputDefs {
+		if !slices.Contains(substrateWords, word) {
+			t.Errorf("substrateKindInputDefs declares a def for %q, which substrateWords does not serve", word)
 		}
 	}
 }
