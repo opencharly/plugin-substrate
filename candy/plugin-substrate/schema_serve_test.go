@@ -26,8 +26,15 @@ func TestNewMetaServesNonEmptySchema(t *testing.T) {
 	if strings.TrimSpace(caps.GetSchemaCue()) == "" {
 		t.Fatal("Describe served an EMPTY schema_cue; every plugin MUST ship a non-empty CUE schema")
 	}
-	if !strings.Contains(caps.GetSchemaCue(), "#SubstratePlugin") {
-		t.Fatalf("served schema does not carry #SubstratePlugin:\n%s", caps.GetSchemaCue())
+	if !strings.Contains(caps.GetSchemaCue(), "#SubstrateProvider") {
+		t.Fatalf("served schema does not carry #SubstrateProvider:\n%s", caps.GetSchemaCue())
+	}
+	// PLUGIN-SCOPED NAME, and the old one must be GONE: `#SubstratePlugin` is also declared
+	// by the pod kind's plugin, and the host splice unifies same-name defs across sources, so
+	// the collision made `charly deploy add` refuse the whole deploy plugin set
+	// (opencharly/plugin-substrate#53). This arm fails on the pre-rename schema.
+	if strings.Contains(caps.GetSchemaCue(), "#SubstratePlugin") {
+		t.Fatalf("the served schema still declares the UNSCOPED #SubstratePlugin (it collides with the pod kind):\n%s", caps.GetSchemaCue())
 	}
 }
 

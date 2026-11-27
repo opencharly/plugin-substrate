@@ -154,7 +154,7 @@ func CliMain(args []string) int {
 // ROUTING is unchanged either way, because each word still declares DeployTraits and therefore
 // still folds through foldSubstrateKind. The rich substrate VALUE is validated HOST-SIDE
 // against the #<Kind>Value def (runPluginKind → foldSubstrateKind → validateKindValueCUE), NOT
-// by this served schema. #SubstratePlugin documents the provider's
+// by this served schema. #SubstrateProvider documents the provider's
 // declaration surface and satisfies the uniform non-empty-schema contract. "vm" and "kubevirt"
 // declare Validates:true (F7/C8) — "vm"'s deep OpValidate check (validate_vm.go) closes the one
 // proven gap the host's closedness-only value gate cannot express (PCI-hostdev field
