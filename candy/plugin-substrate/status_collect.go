@@ -2,8 +2,8 @@ package substratekind
 
 // status_collect.go — the substrate COLLECTOR OpStatus dispatch. flatCollector's status fan-out
 // (status_flat.go, K6 — the former charly/status_collector.go's collectFlat, moved WHOLE into
-// this package) reaches EVERY collector by a DIRECT in-package call (pod + local, P14a; vm + kubernetes +
-// kubevirt + kindcluster + firecracker, K5) — the SAME one-provider-serves-every-word shape the C2-substrate kind decode uses,
+// this package) reaches EVERY collector by a DIRECT in-package call (pod live + local + the probes, P14a; vm +
+// kubernetes + kubevirt, K5; kindcluster + firecracker, later waves) — the SAME one-provider-serves-every-word shape the C2-substrate kind decode uses,
 // now with no registry/wire round-trip needed for the in-package leg either. All words are
 // plugin-served — the in-proc SubstrateCollector registry this seam once deferred to no longer
 // has any registrants (see charly/status_substrate.go, deleted).

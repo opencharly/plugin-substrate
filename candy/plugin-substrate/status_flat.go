@@ -125,9 +125,10 @@ func newFlatCollector(ctx context.Context, rt *kit.ResolvedRuntime) *flatCollect
 // words fan out via a DIRECT in-package call to statusCollect (status_collect.go, same package)
 // — no registry, no wire round-trip for this leg (the fan-out dissolved the former "registry
 // blocker": these words are the SAME substrateWords this provider already owns). Applies the
-// deploy-cone enrichment to the pod + vm rows only (local/kubernetes/kindcluster/firecracker rows are final — each
-// collector's whole collection is deploy-tree-derived inside its own OpStatusCollect handler).
-// Sorted by (Kind, deployKey).
+// deploy-cone enrichment to the pod, vm and kubevirt rows (enrichOne / enrichVmRow /
+// enrichKubevirtRow); the other four — local, kubernetes, kindcluster, firecracker — are final,
+// because each collector's whole collection is deploy-tree-derived inside its own OpStatusCollect
+// handler. Sorted by (Kind, deployKey).
 func (c *flatCollector) collectFlat(ctx context.Context, includeAll bool) ([]spec.DeploymentStatus, flatCollectOpts, error) {
 	opts := flatCollectOpts{
 		IncludeAll: includeAll,

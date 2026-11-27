@@ -253,7 +253,7 @@ func (provider) Invoke(ctx context.Context, req *pb.InvokeRequest) (*pb.InvokeRe
 		}
 		return &pb.InvokeReply{ResultJson: out}, nil
 	case sdk.OpStatusCollect:
-		// P14a + K5: the substrate COLLECTOR OpStatus. The host's status fan-out reaches
+		// P14a + K5 + later waves: the substrate COLLECTOR OpStatus. The host's status fan-out reaches
 		// the collectors (pod live + local + vm + kubernetes + kubevirt + kindcluster +
 		// firecracker) here, by word (pod/vm/kubernetes/local/kubevirt/kindcluster/firecracker).
 		res, err := statusCollect(ctx, req.GetReserved(), req.GetParamsJson())
