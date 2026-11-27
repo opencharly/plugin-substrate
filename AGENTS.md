@@ -1,8 +1,8 @@
 # AGENTS.md — plugin-substrate
 
 Standalone plugin repo for the deploy-substrate structural kinds (`kind:pod`,
-`kind:vm`, `kind:kubernetes`, `kind:local`, `kind:android`, `kind:kubevirt`,
-`kind:kindcluster`) and the `OpStatusCollect` collectors. The plugin is a Go
+`kind:vm`, `kind:kubernetes`, `kind:local`, `kind:kubevirt`,
+`kind:kindcluster`, `kind:firecracker`) and the `OpStatusCollect` collectors. The plugin is a Go
 module at `candy/plugin-substrate/` (module path
 `github.com/opencharly/plugin-substrate/candy/plugin-substrate`); the root
 `charly.yml` declares `discover: candy` **and** the `check-substrate` R10 witness

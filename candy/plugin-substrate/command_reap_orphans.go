@@ -5,8 +5,9 @@ package substratekind
 // whose underlying engine resource (libvirt domain, podman container, kubernetes namespace) is gone, and
 // tears them down via `charly deploy del --assume-yes`.
 //
-// Every dependency this needed turned out reachable without a new seam, mirroring the android
-// status collector's own precedent:
+// Every dependency this needed turned out reachable without a new seam, mirroring the vm
+// status collector's own precedent (status_vm.go reaches verb:libvirt over the same
+// InvokeProvider reverse leg):
 //   - the per-host deploy overlay reads through loadDeployConfig (status_flat.go) — the
 //     cycle-free loaderkit.LoadHostDeployConfigViaExecutor read, NOT deploykit.LoadDeployConfig() directly (bed-
 //     robustness batch item 5: a direct call silently degrades to an empty config out-of-process,

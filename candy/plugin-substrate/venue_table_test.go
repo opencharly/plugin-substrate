@@ -1,8 +1,29 @@
 package substratekind
 
 import (
+	"slices"
 	"testing"
 )
+
+// TestSubstrateWordsExactSet pins the SERVED kind word set — the surface the host resolves a
+// `kind:` node through — and requires substrateTraits to carry a row for exactly those words.
+// A word retired from the contract must leave the provider in the same cutover, and one that
+// leaves must not leave its traits row behind: the kernel reads deploy behaviour off the
+// traits, so an orphan row is a declaration for a word nothing serves.
+func TestSubstrateWordsExactSet(t *testing.T) {
+	want := []string{"pod", "vm", "kubernetes", "local", "kubevirt", "kindcluster", "firecracker"}
+	got := slices.Clone(substrateWords)
+	slices.Sort(got)
+	slices.Sort(want)
+	if !slices.Equal(got, want) {
+		t.Fatalf("substrateWords = %v, want exactly %v (the substrate words the contract still declares)", got, want)
+	}
+	for word := range substrateTraits {
+		if !slices.Contains(substrateWords, word) {
+			t.Errorf("substrateTraits declares a row for %q, which substrateWords does not serve", word)
+		}
+	}
+}
 
 // TestSubstrateTraits_VenueTable pins the DECLARED venue for every substrate word — the
 // single source the kernel stamps onto node.Descent (kit.StampDescent) and every
@@ -17,7 +38,6 @@ func TestSubstrateTraits_VenueTable(t *testing.T) {
 		"kubevirt":    "kubevirt",
 		"local":       "shell",
 		"kubernetes":  "shell",
-		"android":     "parent",
 		"kindcluster": "none",
 	}
 	for word, venue := range want {

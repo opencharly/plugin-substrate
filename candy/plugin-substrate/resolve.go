@@ -2,9 +2,9 @@ package substratekind
 
 // resolve.go — candy/plugin-substrate's OpResolve leg (the substrate-template
 // de-type, Cutover I): project an authored TEMPLATE of ANY substrate word
-// (local/pod/kubernetes/kindcluster/kubevirt/android/vm/firecracker — the
+// (local/pod/kubernetes/kindcluster/kubevirt/vm/firecracker — the
 // substrateWords list) into a Resolved* envelope the kernel consumes without
-// importing the concrete spec.Local / spec.Android / …
+// importing the concrete spec.Local / spec.Pod / …
 //
 // The envelope types are the CONTRACT's (#ResolvedPod et al., spec/schema/
 // substrate_template.cue) because the kernel reads them; only the AUTHORED body
@@ -70,22 +70,6 @@ func resolveSubstrateTemplate(in spec.SubstrateTemplateResolveRequest) ([]byte, 
 		if err := json.Unmarshal(in.KubeVirt.KubeVirt, reply.Resolved); err != nil {
 			return nil, fmt.Errorf("kubevirt resolve: decode: %w", err)
 		}
-		return json.Marshal(reply)
-	case in.Android != nil:
-		var a spec.Android
-		if err := json.Unmarshal(in.Android.Android, &a); err != nil {
-			return nil, fmt.Errorf("android resolve: decode: %w", err)
-		}
-		reply := spec.AndroidResolveReply{Resolved: &spec.ResolvedAndroid{
-			Serial:        a.Serial,
-			Device:        a.Device,
-			ApiLevel:      a.ApiLevel,
-			GoogleAccount: a.GoogleAccount,
-			Plan:          a.Plan,
-			Box:           a.Box,
-			Adb:           a.Adb,
-			Raw:           in.Android.Android,
-		}}
 		return json.Marshal(reply)
 	case in.Vm != nil:
 		// The vm body's authored fields ARE the #ResolvedVm envelope's fields (the envelope
