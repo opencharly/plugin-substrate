@@ -1,5 +1,5 @@
 // Package substratekind is the importable form of charly's SUBSTRATE structural KINDs —
-// pod / vm / kubernetes / local / kubevirt / kindcluster — relocated out of charly's module (C2-substrate; formerly
+// pod / vm / kubernetes / local / kubevirt / kindcluster / firecracker — relocated out of charly's module (C2-substrate; formerly
 // the shared built-in standaloneKind in charly/plugin_substrate.go). ONE provider serves all
 // these words; Describe advertises each with Structural:true.
 //
@@ -63,6 +63,7 @@ var substrateWords = []string{"pod", "vm", "kubernetes", "local", "kubevirt", "k
 // ssh venue WITHOUT exclusive_venue, since it holds no host-resource lease — the host arbiter is
 // skipped); local=shell+machine_venue; kubernetes=shell+image_context+
 // leaf_only; kindcluster=external-in-place (venue none);
+// firecracker=ssh+image_backed (no exclusive_venue — see its row's note below);
 // a zero-value word = external-in-place. pod additionally declares
 // bracketed_lifecycle (deploy-cone cutover 1, item 1): its Start/Stop accept direct-mode CLI
 // opts AND need the Q1 resource-arbiter claim bracketed — vm manages its own venue lifecycle +
@@ -154,11 +155,12 @@ func CliMain(args []string) int {
 // instead of the base's spec.KindValueDefs compatibility fallback. That declaration is what
 // lets the base drop the def; the ROUTING is unchanged either way, because each word still
 // declares DeployTraits and therefore still folds through foldSubstrateKind. #SubstratePlugin documents the provider's
-// declaration surface and satisfies the uniform non-empty-schema contract. ONLY "vm"
-// additionally declares
-// Validates:true (F7/C8) — its deep OpValidate check (validate_vm.go) closes the one proven
-// gap the host's closedness-only value gate cannot express (PCI-hostdev field concreteness);
-// pod/kubernetes/local declare no deep check and pay no extra OpValidate round-trip. Also
+// declaration surface and satisfies the uniform non-empty-schema contract. "vm" and "kubevirt"
+// declare Validates:true (F7/C8) — "vm"'s deep OpValidate check (validate_vm.go) closes the one
+// proven gap the host's closedness-only value gate cannot express (PCI-hostdev field
+// concreteness), and "kubevirt"'s (validate_kubevirt.go) enforces the cross-rules CUE cannot;
+// pod/kubernetes/local/kindcluster/firecracker declare no deep check and pay no extra
+// OpValidate round-trip. Also
 // advertises command:reap-orphans and verb:status-fanout (K6) — an INTERNAL-ONLY verb (never
 // authored in a check plan, never a CLI subcommand; reached solely by command:status
 // InvokeProvider'ing it directly over the in-proc reverse channel), mirroring the existing
