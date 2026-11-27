@@ -182,7 +182,7 @@ func TestSubstrateSelectorDeclarations(t *testing.T) {
 			}
 		}
 	}
-	for _, word := range []string{"kubernetes", "local", "android", "kubevirt", "kindcluster", "firecracker"} {
+	for _, word := range []string{"kubernetes", "local", "kubevirt", "kindcluster", "firecracker"} {
 		if traits := substrateTraits[word]; traits != nil && len(traits.Selectors) != 0 {
 			t.Errorf("substrateTraits[%q].Selectors = %v, want none (the canonical table names selectors only for pod and vm)", word, traits.Selectors)
 		}

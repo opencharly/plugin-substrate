@@ -7,7 +7,7 @@
 //
 // WHAT CAME WITH IT: the twelve `#Kubevirt*` sub-defs and the node sub-def `#KubevirtSource`
 // (cited only by this body) plus the `#KubevirtValue` twin, which now lives at the foot of this
-// file. What STAYS in the contract — `schema.#Android`, `schema.#DistroID`, `schema.#Step`, `schema.#VmBoxMetadata`,
+// file. What STAYS in the contract — `schema.#DistroID`, `schema.#Step`, `schema.#VmBoxMetadata`,
 // `schema.#VmCloudInit`, `schema.#VmSize`, `schema.#VmSource` — is cited as `schema.#…`.
 //
 // THE DEEP VALIDATION STAYS WHERE IT WAS: the cross-rules CUE cannot express (exactly-one boot

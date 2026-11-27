@@ -10,8 +10,8 @@ import (
 
 // TestFanoutMemoResolvesOnce pins the property the check-pod bed failure paid for: within one
 // status fan-out the resolved-project envelope is resolved EXACTLY once, however many
-// collectors ask for it. Without the memo this counts 2 (kubernetes + android) and the test
-// reds.
+// collectors ask for it. Without the memo each of the kubernetes, kubevirt, kindcluster and
+// firecracker collectors resolves it independently and the test reds.
 func TestFanoutMemoResolvesOnce(t *testing.T) {
 	ctx := withResolvedProjectMemo(context.Background())
 

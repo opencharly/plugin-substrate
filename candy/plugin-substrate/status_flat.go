@@ -63,9 +63,10 @@ func loadDeployConfig(ctx context.Context) (*deploykit.DeployConfig, error) {
 // pod-scoped detail path (mirrors the former core status command's Collector.Single call);
 // otherwise it runs the full multi-substrate fan-out (collectFlat).
 func runStatusFanout(ctx context.Context, req spec.StatusSubstrateRequest) (spec.StatusSubstrateReply, error) {
-	// ONE resolved-project resolution for the whole fan-out: the kubernetes and android
-	// collectors both need the envelope, and resolving it twice is what pushed the check-pod
-	// bed's status probe past its 2-minute ceiling under a concurrent roster.
+	// ONE resolved-project resolution for the whole fan-out: the kubernetes, kubevirt,
+	// kindcluster and firecracker collectors all need the envelope, and resolving it per
+	// collector is what pushed the check-pod bed's status probe past its 2-minute ceiling
+	// under a concurrent roster.
 	ctx = withResolvedProjectMemo(ctx)
 
 	rt, err := kit.ResolveRuntime()
@@ -120,11 +121,11 @@ func newFlatCollector(ctx context.Context, rt *kit.ResolvedRuntime) *flatCollect
 }
 
 // collectFlat collects status across every deployment substrate
-// (pod/vm/kubernetes/local/android/kubevirt/kindcluster/firecracker) — ALL
+// (pod/vm/kubernetes/local/kubevirt/kindcluster/firecracker) — ALL
 // words fan out via a DIRECT in-package call to statusCollect (status_collect.go, same package)
 // — no registry, no wire round-trip for this leg (the fan-out dissolved the former "registry
 // blocker": these words are the SAME substrateWords this provider already owns). Applies the
-// deploy-cone enrichment to the pod + vm rows only (local/kubernetes/android/kindcluster rows are final — each
+// deploy-cone enrichment to the pod + vm rows only (local/kubernetes/kindcluster/firecracker rows are final — each
 // collector's whole collection is deploy-tree-derived inside its own OpStatusCollect handler).
 // Sorted by (Kind, deployKey).
 func (c *flatCollector) collectFlat(ctx context.Context, includeAll bool) ([]spec.DeploymentStatus, flatCollectOpts, error) {
@@ -138,7 +139,6 @@ func (c *flatCollector) collectFlat(ctx context.Context, includeAll bool) ([]spe
 	kubernetesRows := c.collectWord(ctx, "kubernetes", opts)
 	kindclusterRows := c.collectWord(ctx, "kindcluster", opts)
 	firecrackerRows := c.collectWord(ctx, "firecracker", opts)
-	androidRows := c.collectWord(ctx, "android", opts)
 	vmRows := c.collectWord(ctx, "vm", opts)
 	for i := range vmRows {
 		c.enrichVmRow(&vmRows[i], opts)
@@ -152,12 +152,11 @@ func (c *flatCollector) collectFlat(ctx context.Context, includeAll bool) ([]spe
 		c.enrichOne(&podRows[i], c.rt.RunEngine)
 	}
 
-	results := make([]spec.DeploymentStatus, 0, len(localRows)+len(kubernetesRows)+len(kindclusterRows)+len(firecrackerRows)+len(androidRows)+len(vmRows)+len(kubevirtRows)+len(podRows))
+	results := make([]spec.DeploymentStatus, 0, len(localRows)+len(kubernetesRows)+len(kindclusterRows)+len(firecrackerRows)+len(vmRows)+len(kubevirtRows)+len(podRows))
 	results = append(results, localRows...)
 	results = append(results, kubernetesRows...)
 	results = append(results, kindclusterRows...)
 	results = append(results, firecrackerRows...)
-	results = append(results, androidRows...)
 	results = append(results, vmRows...)
 	results = append(results, kubevirtRows...)
 	results = append(results, podRows...)
