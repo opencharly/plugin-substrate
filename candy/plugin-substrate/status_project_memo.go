@@ -2,14 +2,14 @@ package substratekind
 
 // status_project_memo.go — ONE resolved-project resolution per status fan-out.
 //
-// collectFlat reaches five substrate words, and TWO of them (kubernetes, android) need the
-// resolved-project envelope to enumerate their deploy nodes. Each was calling
-// fetchResolvedProject independently, so a single `charly status` paid for the full
-// LoadUnified -> Walk -> Materialize pass TWICE — measured at ~3.4s per resolution on this
-// repo's own project, against a probe whose never-hang ceiling is 2 minutes. Under a
-// concurrent bed roster that margin is what fails: the check-pod bed's `charly status --json`
-// probe was killed at exactly 2m0.003s (run 2026.231.0020) while the same probe passed at 88s
-// on an idle host.
+// collectFlat reaches seven substrate words, and FOUR of them (kubernetes, kubevirt,
+// kindcluster, firecracker) need the resolved-project envelope to enumerate their deploy
+// nodes. Each was calling fetchResolvedProject independently, so a single `charly status`
+// paid for the full LoadUnified -> Walk -> Materialize pass once per collector — measured at
+// ~3.4s per resolution on this repo's own project, against a probe whose never-hang ceiling is
+// 2 minutes. Under a concurrent bed roster that margin is what fails: the check-pod bed's
+// `charly status --json` probe was killed at exactly 2m0.003s (run 2026.231.0020) while the
+// same probe passed at 88s on an idle host.
 //
 // The memo is scoped to ONE fan-out, deliberately, and NOT to the process. A process-lifetime
 // cache would be wrong for any long-lived host (`charly mcp serve` and the plugin servers keep

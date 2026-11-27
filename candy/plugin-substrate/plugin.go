@@ -1,5 +1,5 @@
 // Package substratekind is the importable form of charly's SUBSTRATE structural KINDs —
-// pod / vm / kubernetes / local / android / kubevirt / kindcluster — relocated out of charly's module (C2-substrate; formerly
+// pod / vm / kubernetes / local / kubevirt / kindcluster / firecracker — relocated out of charly's module (C2-substrate; formerly
 // the shared built-in standaloneKind in charly/plugin_substrate.go). ONE provider serves all
 // these words; Describe advertises each with Structural:true.
 //
@@ -19,7 +19,7 @@
 //
 // PLACEMENT — COMPILED-IN (listed in the embedded charly/charly.yml compiled_plugins:), NOT
 // external. The substrate kinds are CORE deploy primitives that must ALWAYS resolve: every
-// box/submodule authoring a pod:/vm:/kubernetes:/local:/android: node (the root check/vm/local/kubernetes
+// box/submodule authoring a pod:/vm:/kubernetes:/local: node (the root check/vm/local/kubernetes
 // entities, box/fedora, box/cachyos, box/arch, box/debian, box/ubuntu) relies on them without
 // discovering this candy, exactly like the tier-1 kinds and group. (cmd/serve serves it
 // out-of-process too — one provider, two placements, zero authoring change.)
@@ -50,8 +50,8 @@ const calver = "2026.196.0600"
 var schemaFS embed.FS
 
 // substrateWords is the ONE list of words this provider serves —
-// pod/vm/kubernetes/local/android/kubevirt/kindcluster/firecracker.
-var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android", "kubevirt", "kindcluster", "firecracker"}
+// pod/vm/kubernetes/local/kubevirt/kindcluster/firecracker.
+var substrateWords = []string{"pod", "vm", "kubernetes", "local", "kubevirt", "kindcluster", "firecracker"}
 
 // substrateTraits is the per-word DECLARED #DeployTraits (P9) — the SINGLE source the kernel
 // consults for each substrate's deploy behaviour. kit.StampDescent stamps these onto every
@@ -62,7 +62,8 @@ var substrateWords = []string{"pod", "vm", "kubernetes", "local", "android", "ku
 // kubevirt=ssh+image_backed (a cluster-scheduled VM: the
 // ssh venue WITHOUT exclusive_venue, since it holds no host-resource lease — the host arbiter is
 // skipped); local=shell+machine_venue; kubernetes=shell+image_context+
-// leaf_only; android=parent; kindcluster=external-in-place (venue none);
+// leaf_only; kindcluster=external-in-place (venue none);
+// firecracker=ssh+image_backed (no exclusive_venue — see its row's note below);
 // a zero-value word = external-in-place. pod additionally declares
 // bracketed_lifecycle (deploy-cone cutover 1, item 1): its Start/Stop accept direct-mode CLI
 // opts AND need the Q1 resource-arbiter claim bracketed — vm manages its own venue lifecycle +
@@ -73,11 +74,10 @@ var substrateTraits = map[string]*spec.DeployTraits{
 	"kubevirt":   {Venue: "kubevirt", ImageBacked: true, BedTarget: true, SupportsEphemeral: true, SupportsFromSnapshot: true},
 	"local":      {Venue: "shell", MachineVenue: true, BedTarget: true},
 	"kubernetes": {Venue: "shell", ImageContext: true, LeafOnly: true},
-	"android":    {Venue: "parent", BedTarget: true},
 	// kindcluster provisions node containers on the OPERATOR HOST engine at DEPLOY-ADD
 	// (the deploy:kindcluster provider runs `kind create cluster` + applies the workload
 	// itself) and manages NO charly-side container/VM lifecycle — so it is
-	// EXTERNAL-IN-PLACE (venue "none", like android/exampledeploy), NOT a "shell"
+	// EXTERNAL-IN-PLACE (venue "none", like exampledeploy), NOT a "shell"
 	// service bed: the check runner must apply it in place during deploy add, never run
 	// the pod-style `charly config`/`charly start` (measured: a shell venue made the
 	// runner try `config` and fail with "image not found in local storage").
@@ -111,13 +111,12 @@ var substrateTraits = map[string]*spec.DeployTraits{
 // MOVE, never an optional extra: without it the host keeps answering from the base, so the
 // def could not be deleted there.
 //
-// A word ABSENT from this table declares nothing, because its body still lives in the base
-// and the fallback is still its correct answer. "pod" was the first moved word
-// (opencharly/spec#304 unit 3, body in schema/pod.cue), "local" the second (unit 4, body in
-// schema/local.cue) and "kubernetes" + "kindcluster" the third (unit 5, bodies in
-// schema/kubernetes.cue and schema/kindcluster.cue); each sibling moves the same way, one
-// unit at a time, adding exactly its own row here. The table is keyed by the SAME word list
-// as substrateTraits, so a word cannot declare a def without also declaring its traits.
+// Every served word has a row here, because every body has moved into this plugin's CUE module:
+// "pod" first (opencharly/spec#304 unit 3, body in schema/pod.cue), "local" second (unit 4),
+// "kubernetes" + "kindcluster" third (unit 5), then kubevirt (unit 6), firecracker (unit 7)
+// and vm (unit 8). A word whose body moved adds exactly its own row here. The table is keyed by
+// the SAME word list as substrateTraits, so a word cannot declare a def without also declaring
+// its traits — and TestEveryServedWordDeclaresItsGateDef pins that every served word has one.
 var substrateKindInputDefs = map[string]string{
 	"pod":         "#PodValue",
 	"local":       "#LocalValue",
@@ -144,22 +143,24 @@ func CliMain(args []string) int {
 	return 0
 }
 
-// NewMeta advertises the 8 STRUCTURAL substrate kind capabilities (Class "kind",
+// NewMeta advertises one STRUCTURAL substrate kind capability per substrate word (Class "kind",
 // Structural:true) + this plugin's OWN CUE schema (schema/*.cue, served via sdk.NewMeta →
-// BuildCapabilities): there is NO schema-less plugin. Each kind declares InputDef:"" — the
-// rich substrate value is validated HOST-SIDE against the #<Kind>Value def (runPluginKind →
-// foldSubstrateKind → validateKindValueCUE), NOT by this served schema — EXCEPT "pod" and
-// "local", whose bodies this plugin now OWNS (opencharly/spec#304 units 3 and 4): each of
-// their capabilities declares InputDef:"#<Word>Value", so the host resolves the gate def
-// from the DECLARATION and reads it from the COMPOSED unit (schema/pod.cue, schema/local.cue)
-// instead of the base's spec.KindValueDefs compatibility fallback. That declaration is what
-// lets the base drop the def; the ROUTING is unchanged either way, because each word still
-// declares DeployTraits and therefore still folds through foldSubstrateKind. #SubstratePlugin documents the provider's
-// declaration surface and satisfies the uniform non-empty-schema contract. ONLY "vm"
-// additionally declares
-// Validates:true (F7/C8) — its deep OpValidate check (validate_vm.go) closes the one proven
-// gap the host's closedness-only value gate cannot express (PCI-hostdev field concreteness);
-// pod/kubernetes/local/android declare no deep check and pay no extra OpValidate round-trip. Also
+// BuildCapabilities): there is NO schema-less plugin. EVERY served kind declares
+// InputDef:"#<Word>Value" — the host resolves the gate def from that DECLARATION and reads it
+// from the COMPOSED unit (schema/<word>.cue) instead of the base's spec.KindValueDefs
+// compatibility fallback. "pod" and "local" were the first two bodies to move here
+// (opencharly/spec#304 units 3 and 4) and units 5-8 followed with kubernetes + kindcluster,
+// kubevirt, firecracker and vm. That declaration is what lets the base drop the defs; the
+// ROUTING is unchanged either way, because each word still declares DeployTraits and therefore
+// still folds through foldSubstrateKind. The rich substrate VALUE is validated HOST-SIDE
+// against the #<Kind>Value def (runPluginKind → foldSubstrateKind → validateKindValueCUE), NOT
+// by this served schema. #SubstratePlugin documents the provider's
+// declaration surface and satisfies the uniform non-empty-schema contract. "vm" and "kubevirt"
+// declare Validates:true (F7/C8) — "vm"'s deep OpValidate check (validate_vm.go) closes the one
+// proven gap the host's closedness-only value gate cannot express (PCI-hostdev field
+// concreteness), and "kubevirt"'s (validate_kubevirt.go) enforces the cross-rules CUE cannot;
+// pod/kubernetes/local/kindcluster/firecracker declare no deep check and pay no extra
+// OpValidate round-trip. Also
 // advertises command:reap-orphans and verb:status-fanout (K6) — an INTERNAL-ONLY verb (never
 // authored in a check plan, never a CLI subcommand; reached solely by command:status
 // InvokeProvider'ing it directly over the in-proc reverse channel), mirroring the existing
@@ -238,8 +239,8 @@ func (provider) Invoke(ctx context.Context, req *pb.InvokeRequest) (*pb.InvokeRe
 			return nil, fmt.Errorf("plugin-substrate: OpValidate unsupported for word %q (only %q + %q declare Validates)", req.GetReserved(), "vm", "kubevirt")
 		}
 	case sdk.OpResolve:
-		// The substrate-template de-type (Cutover I): project an opaque local:/android:
-		// TEMPLATE body into a Resolved* envelope the kernel consumes.
+		// The substrate-template de-type (Cutover I): project an opaque local: TEMPLATE body
+		// into a Resolved* envelope the kernel consumes.
 		var in spec.SubstrateTemplateResolveRequest
 		if len(req.GetParamsJson()) > 0 {
 			if err := json.Unmarshal(req.GetParamsJson(), &in); err != nil {
@@ -252,10 +253,9 @@ func (provider) Invoke(ctx context.Context, req *pb.InvokeRequest) (*pb.InvokeRe
 		}
 		return &pb.InvokeReply{ResultJson: out}, nil
 	case sdk.OpStatusCollect:
-		// P14a + K5: the substrate COLLECTOR OpStatus. The host's status
-		// fan-out reaches the cleanly-movable collectors (pod live + local,
-		// vm, kubernetes, kubevirt, kindcluster) here, by word (pod/vm/kubernetes/local/android/kubevirt/kindcluster). android alone
-		// still defers (it merges PROJECT + PER-MACHINE deploy config).
+		// P14a + K5 + later waves: the substrate COLLECTOR OpStatus. The host's status fan-out reaches
+		// the collectors (pod live + local + vm + kubernetes + kubevirt + kindcluster +
+		// firecracker) here, by word (pod/vm/kubernetes/local/kubevirt/kindcluster/firecracker).
 		res, err := statusCollect(ctx, req.GetReserved(), req.GetParamsJson())
 		if err != nil {
 			return nil, err

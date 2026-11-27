@@ -1,7 +1,7 @@
 # plugin-substrate
 
 Deploy-substrate structural kinds for OpenCharly — the `pod`, `vm`, `kubernetes`,
-`local`, `android`, `kubevirt`, and `kindcluster` kinds.
+`local`, `kubevirt`, `kindcluster`, and `firecracker` kinds.
 
 `plugin-substrate` owns the substrate structural deploy kinds. Each is **both** a
 standalone **template** (a bare `vm:`/`pod:` block → the typed template map
@@ -15,7 +15,7 @@ out-of-process via `cmd/serve`.
 
 The plugin also serves the **`OpStatusCollect`** collector — the cleanly-movable
 `charly status` collectors (pod live + local install-ledger + the probes, plus the
-vm/kubernetes/kubevirt/android collectors) reached by the host's status fan-out.
+vm/kubernetes/kubevirt/kindcluster/firecracker collectors) reached by the host's status fan-out.
 
 ## What it provides
 
@@ -25,9 +25,9 @@ vm/kubernetes/kubevirt/android collectors) reached by the host's status fan-out.
 | `kind:vm` | the `vm:` structural kind |
 | `kind:kubernetes` | the `kubernetes:` structural kind |
 | `kind:local` | the `local:` structural kind |
-| `kind:android` | the `android:` structural kind |
 | `kind:kubevirt` | the `kubevirt:` structural kind (a KubeVirt VM on a cluster) |
 | `kind:kindcluster` | the `kindcluster:` structural kind |
+| `kind:firecracker` | the `firecracker:` structural kind (a microVM under KVM, reached over SSH) |
 | `OpStatusCollect` | the status collectors reached by the `charly status` fan-out |
 
 ## How to use it
